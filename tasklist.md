@@ -1,5 +1,5 @@
 ## Phase 1: Project Setup & Foundation (The Groundwork) 🏗️
-- [ ] **Phase 1 Complete**
+- [x] **Phase 1 Complete**
 
 This phase establishes the project using the new stack and configures all necessary services and testing environments.
 
@@ -36,19 +36,19 @@ This phase establishes the project using the new stack and configures all necess
 ---
 
 ### Task 1.3: Set Up the Bun Backend
-- [ ] **Task 1.3 Complete**
-- [ ] 1.  Navigate into the `api` directory.
-- [ ] 2.  Initialize a new Bun project: `bun init`. This creates `package.json`, `tsconfig.json`, and an `index.ts`.
-- [ ] 3.  Install **Elysia.js** (a fast, Bun-native framework) and the Supabase client: `bun add elysia @supabase/supabase-js`.
-- [ ] 4.  Install the Google Cloud Vision SDK: `bun add @google-cloud/vision`.
-- [ ] 5.  Create a basic Elysia server in `index.ts` with a single health-check route (e.g., `GET /`).
-- [ ] 6.  **Setup Backend Testing**: Bun has a built-in test runner. Create a file like `index.test.ts` to write your first test.
+- [x] **Task 1.3 Complete**
+- [x] 1.  Navigate into the `api` directory.
+- [x] 2.  Initialize a new Bun project: `bun init`. This creates `package.json`, `tsconfig.json`, and an `index.ts`.
+- [x] 3.  Install **Elysia.js** (a fast, Bun-native framework) and the Supabase client: `bun add elysia @supabase/supabase-js`.
+- [x] 4.  Install the Google Cloud Vision SDK: `bun add @google-cloud/vision`.
+- [x] 5.  Create a basic Elysia server in `index.ts` with a single health-check route (e.g., `GET /`).
+- [x] 6.  **Setup Backend Testing**: Bun has a built-in test runner. Create a file like `index.test.ts` to write your first test.
 
 * **Unit Tests (Bun)**:
-    - [ ] Write a test for the health-check route using Elysia's testing utilities to ensure it returns a `200 OK` status.
+    - [x] Write a test for the health-check route using Elysia's testing utilities to ensure it returns a `200 OK` status.
 * **Success Criteria**:
-    - [ ] The backend server runs successfully with `bun run dev`.
-    - [ ] The health-check unit test passes when you run `bun test`.
+    - [x] The backend server runs successfully with `bun run dev`.
+    - [x] The health-check unit test passes when you run `bun test`.
 
 ***
 

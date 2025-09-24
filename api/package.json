@@ -1,0 +1,21 @@
+{
+  "name": "api",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "scripts": {
+    "dev": "bun --hot index.ts",
+    "test": "bun test"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@google-cloud/vision": "^5.3.3",
+    "@supabase/supabase-js": "^2.57.4",
+    "elysia": "^1.4.7"
+  }
+}
