@@ -18,20 +18,20 @@ This phase establishes the project using the new stack and configures all necess
 ---
 
 ### Task 1.2: Set Up the Next.js Frontend
-- [ ] **Task 1.2 Complete**
-- [ ] 1.  Navigate into the `app` directory.
-- [ ] 2.  Initialize a new Next.js project: `bunx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias "@/*"`.
-- [ ] 3.  Set up **shadcn/ui**: Run `bunx shadcn-ui@latest init` and follow the prompts.
-- [ ] 4.  Install the Supabase client library: `bun add @supabase/supabase-js`.
-- [ ] 5.  Install necessary UI components to start: `bunx shadcn-ui@latest add button input dialog sonner`.
-- [ ] 6.  Create a `.env.local` file and add your Supabase project URL and anon key.
-- [ ] 7.  **Setup Frontend Testing**: Install and configure Jest: `bun add -D jest @types/jest ts-jest @testing-library/react @testing-library/jest-dom jest-environment-jsdom`. Create a `jest.config.js` file with basic setup (e.g., transform with ts-jest, testEnvironment: 'jsdom'). Update `package.json` scripts with `"test": "jest"`. For E2E tests, install Cypress: `bun add -D cypress` and run `bunx cypress open` to initialize it.
+- [x] **Task 1.2 Complete**
+- [x] 1.  Navigate into the `app` directory.
+- [x] 2.  Initialize a new Next.js project: `bunx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias "@/*"`.
+- [x] 3.  Set up **shadcn/ui**: Run `bunx shadcn-ui@latest init` and follow the prompts.
+- [x] 4.  Install the Supabase client library: `bun add @supabase/supabase-js`.
+- [x] 5.  Install necessary UI components to start: `bunx shadcn-ui@latest add button input dialog sonner`.
+- [x] 6.  Create a `.env.local` file and add your Supabase project URL and anon key.
+- [x] 7.  **Setup Frontend Testing**: Install and configure Jest: `bun add -D jest @types/jest ts-jest @testing-library/react @testing-library/jest-dom jest-environment-jsdom`. Create a `jest.config.js` file with basic setup (e.g., transform with ts-jest, testEnvironment: 'jsdom'). Update `package.json` scripts with `"test": "jest"`. For E2E tests, install Cypress: `bun add -D cypress` and run `bunx cypress open` to initialize it.
 
 * **Success Criteria**:
-    - [ ] The Next.js development server runs successfully with `bun run dev`.
-    - [ ] You can import and use a `Button` component from `shadcn/ui`.
-    - [ ] `bun test` runs a basic Jest test without errors.
-    - [ ] The Cypress E2E test runner opens without errors.
+    - [x] The Next.js development server runs successfully with `bun run dev`.
+    - [x] You can import and use a `Button` component from `shadcn/ui`.
+    - [x] `bun test` runs a basic Jest test without errors.
+    - [x] The Cypress E2E test runner opens without errors.
 
 ---
 
