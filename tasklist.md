@@ -4,16 +4,16 @@
 This phase establishes the project using the new stack and configures all necessary services and testing environments.
 
 ### Task 1.1: Initialize Services and Project Structure
-- [ ] **Task 1.1 Complete**
-- [ ] 1.  **Supabase Project**: Go to [supabase.com](https://supabase.com), create a new project. Keep the **Project URL** and `anon` **key** handy.
-- [ ] 2.  **Google Cloud Project**: Go to the Google Cloud Console, create a new project, and enable the **Cloud Vision API**. Generate API credentials (an API key) and save it.
-- [ ] 3.  **Monorepo Setup**: Create a root directory (e.g., `Rashomon`). Inside it, create two directories: `app` (for the Next.js frontend) and `api` (for the Bun backend).
-- [ ] 4.  **Initialize Git**: In the root directory, run `git init` and create a root `.gitignore` file.
+- [x] **Task 1.1 Complete**
+- [x] 1.  **Supabase Project**: Go to [supabase.com](https://supabase.com), create a new project. Keep the **Project URL** and `anon` **key** handy.
+- [x] 2.  **Google Cloud Project**: Go to the Google Cloud Console, create a new project, and enable the **Cloud Vision API**. Generate API credentials (an API key) and save it.
+- [x] 3.  **Monorepo Setup**: Create a root directory (e.g., `Rashomon`). Inside it, create two directories: `app` (for the Next.js frontend) and `api` (for the Bun backend).
+- [x] 4.  **Initialize Git**: In the root directory, run `git init` and create a root `.gitignore` file.
 
 * **Success Criteria**:
-    - [ ] Supabase project is active and keys are saved securely (e.g., in a password manager).
-    - [ ] Google Cloud Vision API is enabled and the API key is saved.
-    - [ ] The monorepo folder structure is in place and committed to Git.
+    - [x] Supabase project is active and keys are saved securely (e.g., in a password manager).
+    - [x] Google Cloud Vision API is enabled and the API key is saved.
+    - [x] The monorepo folder structure is in place and committed to Git.
 
 ---
 
