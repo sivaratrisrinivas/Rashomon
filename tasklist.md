@@ -58,19 +58,19 @@ This phase establishes the project using the new stack and configures all necess
 This phase uses Supabase's built-in auth to handle user sign-in and profile creation.
 
 ### Task 2.1: Define Database Schema in Supabase
-- [ ] **Task 2.1 Complete**
-- [ ] 1.  Open the Supabase dashboard and navigate to the **Table Editor**.
-- [ ] 2.  Supabase already provides a `users` table in the `auth` schema. You don't need to create this.
-- [ ] 3.  Create a new table named `profiles` in the `public` schema.
-    - [ ] **Columns**:
-        - [ ] `id` (type `uuid`, Primary Key, and a Foreign Key referencing `auth.users.id`).
-        - [ ] `created_at` (type `timestamptz`, default `now()`).
-        - [ ] `reading_preferences` (type `text[]`, an array of text).
-- [ ] 4.  Enable **Row Level Security (RLS)** on the `profiles` table. Create policies that allow a user to read and update only their own profile.
+- [x] **Task 2.1 Complete**
+- [x] 1.  Open the Supabase dashboard and navigate to the **Table Editor**.
+- [x] 2.  Supabase already provides a `users` table in the `auth` schema. You don't need to create this.
+- [x] 3.  Create a new table named `profiles` in the `public` schema.
+    - [x] **Columns**:
+        - [x] `id` (type `uuid`, Primary Key, and a Foreign Key referencing `auth.users.id`).
+        - [x] `created_at` (type `timestamptz`, default `now()`).
+        - [x] `reading_preferences` (type `text[]`, an array of text).
+- [x] 4.  Enable **Row Level Security (RLS)** on the `profiles` table. Create policies that allow a user to read and update only their own profile.
 
 * **Success Criteria**:
-    - [ ] The `profiles` table is created in Supabase with the correct columns and relationships.
-    - [ ] RLS is enabled and policies are in place to secure user data.
+    - [x] The `profiles` table is created in Supabase with the correct columns and relationships.
+    - [x] RLS is enabled and policies are in place to secure user data.
 
 ---
 
