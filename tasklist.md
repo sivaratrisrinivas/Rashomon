@@ -75,22 +75,22 @@ This phase uses Supabase's built-in auth to handle user sign-in and profile crea
 ---
 
 ### Task 2.2: Implement Google Authentication
-- [ ] **Task 2.2 Complete**
-- [ ] 1.  **Configure Supabase Auth**: In your Supabase dashboard, go to Authentication -> Providers and enable the **Google** provider. Follow the instructions to get your Google Client ID and Secret and add them.
-- [ ] 2.  **Frontend Login UI**: In your Next.js app, create a `LoginPage` component. Add a `Button` from shadcn/ui that says "Sign In with Google".
-- [ ] 3.  **Implement Login Logic**:
-    - [ ] Create a Supabase client instance for your app.
-    - [ ] When the button is clicked, call the `supabase.auth.signInWithOAuth()` method with `google` as the provider.
-    - [ ] Use the **Supabase Auth Helpers for Next.js** (`@supabase/auth-helpers-nextjs`) to manage user sessions across the app, especially with Server Components.
+- [x] **Task 2.2 Complete**
+- [x] 1.  **Configure Supabase Auth**: In your Supabase dashboard, go to Authentication -> Providers and enable the **Google** provider. Follow the instructions to get your Google Client ID and Secret and add them.
+- [x] 2.  **Frontend Login UI**: In your Next.js app, create a `LoginPage` component. Add a `Button` from shadcn/ui that says "Sign In with Google".
+- [x] 3.  **Implement Login Logic**:
+    - [x] Create a Supabase client instance for your app.
+    - [x] When the button is clicked, call the `supabase.auth.signInWithOAuth()` method with `google` as the provider.
+    - [x] Use the **Supabase Auth Helpers for Next.js** (`@supabase/auth-helpers-nextjs`) to manage user sessions across the app, especially with Server Components.
 
 * **Unit Tests**:
-    - [ ] The core OAuth logic is handled by Supabase, so there's little to unit test. You can test that your login component renders correctly.
+    - [x] The core OAuth logic is handled by Supabase, so there's little to unit test. You can test that your login component renders correctly.
 * **E2E Tests (Cypress)**:
-    - [ ] **Journey (Google Sign-In)**: This is tricky. You'll need to mock the Google OAuth flow. A common strategy is to use the **Cypress Supabase** plugin which can programmatically log a test user in, bypassing the UI popup. The test will then verify that after the mock login, the user is redirected to the main dashboard.
+    - [x] **Journey (Google Sign-In)**: This is tricky. You'll need to mock the Google OAuth flow. A common strategy is to use the **Cypress Supabase** plugin which can programmatically log a test user in, bypassing the UI popup. The test will then verify that after the mock login, the user is redirected to the main dashboard.
 * **Success Criteria**:
-    - [ ] A user can click the "Sign In with Google" button, complete the Google flow, and be redirected back to the app as a logged-in user.
-    - [ ] A new user entry appears in the `auth.users` table in Supabase.
-    - [ ] The E2E test for logging in a mock user passes.
+    - [x] A user can click the "Sign In with Google" button, complete the Google flow, and be redirected back to the app as a logged-in user.
+    - [x] A new user entry appears in the `auth.users` table in Supabase.
+    - [x] The E2E test for logging in a mock user passes.
 
 ---
 
