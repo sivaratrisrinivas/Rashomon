@@ -1,18 +1,21 @@
-// 
+import './globals.css';
 
+// Define metadata for consistent server/client rendering
+export const metadata = {
+  title: 'Rashomon',
+  description: 'Reading and Discussion Platform',
+};
 
-
-
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const supabase = createServerComponentClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
+      <body suppressHydrationWarning={true}>
+        {children}
+      </body>
     </html>
   );
 }

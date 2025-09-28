@@ -9,7 +9,7 @@ const LoginPage = () => {
         await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+                redirectTo: `${window.location.origin}/auth/callback`,
             },
         });
     };
