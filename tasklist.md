@@ -53,7 +53,7 @@ This phase establishes the project using the new stack and configures all necess
 ***
 
 ## Phase 2: User Authentication & Onboarding (The Front Door) 🚪
-- [ ] **Phase 2 Complete**
+- [x] **Phase 2 Complete**
 
 This phase uses Supabase's built-in auth to handle user sign-in and profile creation.
 
@@ -95,21 +95,21 @@ This phase uses Supabase's built-in auth to handle user sign-in and profile crea
 ---
 
 ### Task 2.3: Create User Profile & Onboarding
-- [ ] **Task 2.3 Complete**
-- [ ] 1.  **Backend Trigger**: In Supabase, create a **PostgreSQL function** that runs automatically whenever a new user is added to `auth.users`. This function should insert a corresponding row into the `public.profiles` table, linking them by `id`.
-- [ ] 2.  **Frontend Onboarding Flow**:
-    - [ ] After a user signs in for the first time, check if their `reading_preferences` in their `profile` are empty.
-    - [ ] If they are, display an `OnboardingPage` component (you can use a `Dialog` from shadcn) to ask for their preferences.
-    - [ ] Create a backend endpoint on your Bun server (e.g., `PUT /api/profile`) that takes the preferences and updates the user's row in the `profiles` table using the Supabase client. This is more secure than updating from the client, as it allows for server-side validation.
+- [x] **Task 2.3 Complete**
+- [x] 1.  **Backend Trigger**: In Supabase, create a **PostgreSQL function** that runs automatically whenever a new user is added to `auth.users`. This function should insert a corresponding row into the `public.profiles` table, linking them by `id`.
+- [x] 2.  **Frontend Onboarding Flow**:
+    - [x] After a user signs in for the first time, check if their `reading_preferences` in their `profile` are empty.
+    - [x] If they are, display an `OnboardingPage` component (you can use a `Dialog` from shadcn) to ask for their preferences.
+    - [x] Create a backend endpoint on your Bun server (e.g., `PUT /api/profile`) that takes the preferences and updates the user's row in the `profiles` table using the Supabase client. This is more secure than updating from the client, as it allows for server-side validation.
 
 * **Unit Tests**:
-    - [ ] **Backend**: Write a test for the `PUT /api/profile` endpoint to ensure it correctly validates input and updates the profile.
+    - [x] **Backend**: Write a test for the `PUT /api/profile` endpoint to ensure it correctly validates input and updates the profile.
 * **E2E Tests (Cypress)**:
-    - [ ] Extend the sign-in journey. After the mock login, the test should assert that the onboarding modal appears, interact with it to select preferences, submit, and verify the modal closes.
+    - [x] Extend the sign-in journey. After the mock login, the test should assert that the onboarding modal appears, interact with it to select preferences, submit, and verify the modal closes.
 * **Success Criteria**:
-    - [ ] When a new user signs up, a corresponding profile is automatically created.
-    - [ ] The onboarding flow is shown only to new users and successfully saves their preferences.
-    - [ ] The E2E test for the full sign-up and onboarding journey passes.
+    - [x] When a new user signs up, a corresponding profile is automatically created.
+    - [x] The onboarding flow is shown only to new users and successfully saves their preferences.
+    - [x] The E2E test for the full sign-up and onboarding journey passes.
 
 ***
 
