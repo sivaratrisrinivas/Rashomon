@@ -117,15 +117,15 @@ This phase uses Supabase's built-in auth to handle user sign-in and profile crea
 - [ ] **Phase 3 Complete**
 
 ### Task 3.1: Database Schema & File Storage
-- [ ] **Task 3.1 Complete**
-- [ ] 1.  **Schema**: In Supabase, create a `content` table.
-    - [ ] **Columns**: `id` (pk, `uuid`), `user_id` (fk to `auth.users.id`), `source_type` (`text`, e.g., 'url' or 'upload'), `source_info` (`text`), `processed_text` (`text`), `created_at` (`timestamptz`).
-    - [ ] Enable RLS to ensure users can only access their own content.
-- [ ] 2.  **Storage**: In the Supabase dashboard, go to Storage and create a new **bucket** named `uploads`. Make it a private bucket. Set up storage policies so that users can only upload to a folder corresponding to their user ID.
+- [x] **Task 3.1 Complete**
+- [x] 1.  **Schema**: In Supabase, create a `content` table.
+    - [x] **Columns**: `id` (pk, `uuid`), `user_id` (fk to `auth.users.id`), `source_type` (`text`, e.g., 'url' or 'upload'), `source_info` (`text`), `processed_text` (`text`), `created_at` (`timestamptz`).
+    - [x] Enable RLS to ensure users can only access their own content.
+- [x] 2.  **Storage**: In the Supabase dashboard, go to Storage and create a new **bucket** named `uploads`. Make it a private bucket. Set up storage policies so that users can only upload to a folder corresponding to their user ID.
 
 * **Success Criteria**:
-    - [ ] The `content` table is created with correct RLS policies.
-    - [ ] The `uploads` storage bucket is created and secured.
+    - [x] The `content` table is created with correct RLS policies.
+    - [x] The `uploads` storage bucket is created and secured.
 
 ---
 
