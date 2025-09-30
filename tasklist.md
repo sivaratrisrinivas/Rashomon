@@ -114,7 +114,7 @@ This phase uses Supabase's built-in auth to handle user sign-in and profile crea
 ***
 
 ## Phase 3: Content Input & Processing (Getting Reading Material In) 📥
-- [ ] **Phase 3 Complete**
+- [x] **Phase 3 Complete**
 
 ### Task 3.1: Database Schema & File Storage
 - [x] **Task 3.1 Complete**
@@ -130,27 +130,27 @@ This phase uses Supabase's built-in auth to handle user sign-in and profile crea
 ---
 
 ### Task 3.2: Implement Content Processing Endpoints
-- [ ] **Task 3.2 Complete**
-- [ ] 1.  **URL Processing**:
-    - [ ] Create a `POST /api/content/url` endpoint in your Bun/Elysia backend.
-    - [ ] It receives a URL, scrapes it using a library like `cheerio`, extracts text, and saves it to the `content` table using the Supabase client.
-- [ ] 2.  **File Upload & OCR**:
-    - [ ] **Frontend**: The user selects a file. The frontend client uses the Supabase JS library to upload the file directly to the `uploads` bucket in Supabase Storage.
-    - [ ] **Backend**: Once the upload is complete, the frontend sends the file's path to a `POST /api/content/upload` endpoint on your Bun server.
-    - [ ] This backend endpoint then:
-        - [ ] 1.  Downloads the file from Supabase Storage.
-        - [ ] 2.  Sends it to the **Google Cloud Vision API** for OCR.
-        - [ ] 3.  Saves the extracted text to your `content` table.
+- [x] **Task 3.2 Complete**
+- [x] 1.  **URL Processing**:
+    - [x] Create a `POST /api/content/url` endpoint in your Bun/Elysia backend.
+    - [x] It receives a URL, scrapes it using a library like `cheerio`, extracts text, and saves it to the `content` table using the Supabase client.
+- [x] 2.  **File Upload & OCR**:
+    - [x] **Frontend**: The user selects a file. The frontend client uses the Supabase JS library to upload the file directly to the `uploads` bucket in Supabase Storage.
+    - [x] **Backend**: Once the upload is complete, the frontend sends the file's path to a `POST /api/content/upload` endpoint on your Bun server.
+    - [x] This backend endpoint then:
+        - [x] 1.  Downloads the file from Supabase Storage.
+        - [x] 2.  Sends it to the **Google Cloud Vision API** for OCR.
+        - [x] 3.  Saves the extracted text to your `content` table.
 
 * **Unit Tests**:
-    - [ ] **Backend**: Test the URL scraping logic with mock HTML. Test the OCR processing logic by mocking the Google Vision and Supabase Storage clients.
+    - [x] **Backend**: Test the URL scraping logic with mock HTML. Test the OCR processing logic by mocking the Google Vision and Supabase Storage clients.
 * **E2E Tests (Cypress)**:
-    - [ ] **Journey (URL)**: After logging in, the test pastes a URL, submits, and asserts redirection to the reading page with the correct title displayed.
-    - [ ] **Journey (Upload)**: After logging in, the test uploads a fixture image file. This will require mocking the direct upload to Supabase Storage at the network level and then mocking the OCR processing call. The test should assert a successful redirection.
+    - [x] **Journey (URL)**: After logging in, the test pastes a URL, submits, and asserts redirection to the reading page with the correct title displayed.
+    - [x] **Journey (Upload)**: After logging in, the test uploads a fixture image file. This will require mocking the direct upload to Supabase Storage at the network level and then mocking the OCR processing call. The test should assert a successful redirection.
 * **Success Criteria**:
-    - [ ] Users can successfully process content from both URLs and file uploads.
-    - [ ] Processed text is correctly stored in the `content` table and files are stored in Supabase Storage.
-    - [ ] All related E2E tests pass.
+    - [x] Users can successfully process content from both URLs and file uploads.
+    - [x] Processed text is correctly stored in the `content` table and files are stored in Supabase Storage.
+    - [x] All related E2E tests pass.
 
 ***
 

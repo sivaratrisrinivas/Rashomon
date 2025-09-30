@@ -5,16 +5,33 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { getSupabaseClient } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 
 const preferencesOptions = ['fiction', 'non-fiction', 'mystery', 'science', 'history']; // Example options
 
 const OnboardingPage = () => {
     const [selectedPreferences, setSelectedPreferences] = useState<string[]>([]);
+    const router = useRouter();
 
     const handleSubmit = async () => {
-        // API call to PUT /api/profile will go here in Subtask 4
-        console.log('Selected preferences:', selectedPreferences);
-        // After submit, redirect to /
+        const supabase = getSupabaseClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const response = await fetch('http://localhost:3001/api/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: session.user.id,
+                reading_preferences: selectedPreferences
+            }),
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            router.push('/');
+        }
     };
 
     return (
