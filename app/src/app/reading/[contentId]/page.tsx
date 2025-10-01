@@ -1,107 +1,148 @@
-import { createSupabaseServerClient } from '@/lib/supabase-server';
-import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+'use client';
 
-interface ReadingPageProps {
-    params: {
-        contentId: string;
-    };
+import { use, useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { getSupabaseClient } from '@/lib/supabase';
+
+type ReadingPageProps = { params: Promise<{ contentId: string }> };
+
+export default function ReadingPage({ params }: ReadingPageProps) {
+    const { contentId } = use(params);
+    const [processedText, setProcessedText] = useState('');
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchContent = async () => {
+            const supabase = getSupabaseClient();
+            const { data: content } = await supabase
+                .from('content')
+                .select('processed_text')
+                .eq('id', contentId)
+                .single();
+
+            if (content) {
+                setProcessedText(content.processed_text);
+            }
+            setLoading(false);
+        };
+        fetchContent();
+    }, [contentId]);
+
+    if (loading) {
+        return <div>Loading...</div>;
+    }
+
+    if (!processedText) {
+        return <div>Content not found</div>;
+    }
+
+    return <ClientReadingView contentId={contentId} processedText={processedText} />;
 }
 
-export default async function ReadingPage({ params }: ReadingPageProps) {
-    const supabase = await createSupabaseServerClient();
-    const { data: { session } } = await supabase.auth.getSession();
+function ClientReadingView({ contentId, processedText }: { contentId: string, processedText: string }) {
+    const [selection, setSelection] = useState('');
+    const [position, setPosition] = useState({ x: 0, y: 0 });
 
-    if (!session) {
-        notFound();
+    // Parse the structured content
+    let content;
+    try {
+        content = JSON.parse(processedText);
+    } catch {
+        // Fallback for old plain text content
+        content = { metadata: { title: 'Reading View' }, paragraphs: [processedText] };
     }
 
-    const { data: content, error } = await supabase
-        .from('content')
-        .select('*')
-        .eq('id', params.contentId)
-        .eq('user_id', session.user.id)
-        .single();
+    useEffect(() => {
+        const handleMouseUp = (e: MouseEvent) => {
+            const sel = window.getSelection()?.toString().trim();
+            if (sel) {
+                setSelection(sel);
+                setPosition({ x: e.pageX, y: e.pageY });
+            } else {
+                setSelection('');
+            }
+        };
+        document.addEventListener('mouseup', handleMouseUp);
+        return () => document.removeEventListener('mouseup', handleMouseUp);
+    }, []);
 
-    if (error || !content) {
-        notFound();
-    }
+    const handleDiscuss = async () => {
+        const supabase = getSupabaseClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const response = await fetch('http://localhost:3001/highlights', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contentId,
+                text: selection,
+                context: processedText.substring(0, 100),
+                userId: session.user.id
+            }),
+        });
+        if (response.ok) {
+            console.log('Highlight saved');
+        }
+        setSelection('');
+    };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-            {/* Header */}
-            <header className="border-b bg-white shadow-sm">
-                <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-                    <Link href="/" className="text-xl font-bold hover:opacity-80 transition">
-                        Rashomon
-                    </Link>
-                    <nav className="flex gap-4">
-                        <Link href="/dashboard">
-                            <Button variant="ghost">Dashboard</Button>
-                        </Link>
-                    </nav>
-                </div>
-            </header>
-
-            {/* Main Content */}
-            <main className="max-w-4xl mx-auto px-6 py-8">
-                {/* Back Button */}
-                <div className="mb-6">
-                    <Link href="/dashboard">
-                        <Button variant="ghost" size="sm">
-                            ← Back to Dashboard
-                        </Button>
-                    </Link>
+        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+            <div className="max-w-3xl mx-auto px-6 py-12">
+                {/* Header */}
+                <div className="mb-8 border-b border-slate-200 pb-8">
+                    {content.metadata.category && (
+                        <div className="text-sm font-medium text-slate-500 mb-2">
+                            {content.metadata.category}
+                            {content.metadata.readingTime && (
+                                <span className="ml-3">| {content.metadata.readingTime}</span>
+                            )}
+                        </div>
+                    )}
+                    <h1 className="text-4xl font-bold text-slate-900 leading-tight">
+                        {content.metadata.title}
+                    </h1>
                 </div>
 
-                {/* Content Card */}
-                <article className="bg-white rounded-lg border shadow-sm">
-                    {/* Article Header */}
-                    <div className="border-b px-8 py-6 bg-gray-50">
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-lg">
-                                        {content.source_type === 'url' ? '🌐' : '📄'}
-                                    </span>
-                                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                        {content.source_type === 'url' ? 'Web Article' : 'Uploaded Document'}
-                                    </span>
-                                </div>
-                                <p className="text-sm text-gray-600 break-all">
-                                    {content.source_info}
+                {/* Content */}
+                <article className="prose prose-lg prose-slate max-w-none" id="content-text">
+                    {content.paragraphs.map((para: string, idx: number) => {
+                        if (para.startsWith('> ')) {
+                            return (
+                                <blockquote key={idx} className="border-l-4 border-slate-300 pl-6 py-2 my-6 italic text-slate-700">
+                                    {para.substring(2)}
+                                </blockquote>
+                            );
+                        } else if (para.startsWith('## ')) {
+                            return (
+                                <h2 key={idx} className="text-2xl font-semibold text-slate-900 mt-8 mb-4">
+                                    {para.substring(3)}
+                                </h2>
+                            );
+                        } else {
+                            return (
+                                <p key={idx} className="text-slate-700 leading-relaxed mb-6">
+                                    {para}
                                 </p>
-                            </div>
-                            <div className="text-right text-xs text-gray-400">
-                                {new Date(content.created_at).toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric'
-                                })}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Article Content */}
-                    <div className="px-8 py-8">
-                        <div className="prose prose-lg max-w-none">
-                            <div className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base">
-                                {content.processed_text}
-                            </div>
-                        </div>
-                    </div>
+                            );
+                        }
+                    })}
                 </article>
+            </div>
 
-                {/* Future Feature Hint */}
-                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-800">
-                        <strong>Coming soon:</strong> Highlight text to discuss with others reading the same content in real-time.
-                    </p>
-                </div>
-            </main>
+            {/* Selection popover */}
+            {selection && (
+                <Popover open={!!selection}>
+                    <PopoverTrigger asChild>
+                        <div style={{ position: 'absolute', top: position.y, left: position.x }} />
+                    </PopoverTrigger>
+                    <PopoverContent>
+                        <Button onClick={handleDiscuss}>Discuss this</Button>
+                    </PopoverContent>
+                </Popover>
+            )}
         </div>
     );
 }
-
-

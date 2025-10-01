@@ -155,25 +155,25 @@ This phase uses Supabase's built-in auth to handle user sign-in and profile crea
 ***
 
 ## Phase 4: Core Reading & Highlighting Interface (The Main Event) 📖
-- [ ] **Phase 4 Complete**
+- [x] **Phase 4 Complete**
 
 ### Task 4.1: Build Reading View and Highlighting Logic
-- [ ] **Task 4.1 Complete**
-- [ ] 1.  **Schema**: In Supabase, create a `highlights` table (`id`, `user_id`, `content_id`, `highlighted_text`, `surrounding_context`, `created_at`). Add RLS policies.
-- [ ] 2.  **Frontend Reading Page**: Create a dynamic Next.js page (`/reading/[contentId]`) that fetches and displays the `processed_text` for a given piece of content. Use server-side rendering (`getServerSideProps` or App Router's server components) for fast initial loads.
-- [ ] 3.  **Highlighting UI**:
-    - [ ] Implement the `onMouseUp` logic using `window.getSelection()`.
-    - [ ] Use a `shadcn/ui` `Popover` or `Tooltip` to show a "Discuss this" button when text is selected.
-    - [ ] When clicked, call a `POST /api/highlights` endpoint on your Bun server to save the highlight data to the Supabase table.
+- [x] **Task 4.1 Complete**
+- [x] 1.  **Schema**: In Supabase, create a `highlights` table (`id`, `user_id`, `content_id`, `highlighted_text`, `surrounding_context`, `created_at`). Add RLS policies.
+- [x] 2.  **Frontend Reading Page**: Create a dynamic Next.js page (`/reading/[contentId]`) that fetches and displays the `processed_text` for a given piece of content. Use server-side rendering (`getServerSideProps` or App Router's server components) for fast initial loads.
+- [x] 3.  **Highlighting UI**:
+    - [x] Implement the `onMouseUp` logic using `window.getSelection()`.
+    - [x] Use a `shadcn/ui` `Popover` or `Tooltip` to show a "Discuss this" button when text is selected.
+    - [x] When clicked, call a `POST /api/highlights` endpoint on your Bun server to save the highlight data to the Supabase table.
 
 * **Unit Tests**:
-    - [ ] **Backend**: Test the `/api/highlights` endpoint to ensure it saves data correctly.
+    - [x] **Backend**: Test the `/api/highlights` endpoint to ensure it saves data correctly.
 * **E2E Tests (Cypress)**:
-    - [ ] **Journey (Highlighting)**: The test navigates to a reading page, simulates text selection, asserts the "Discuss" popover appears, clicks it, and verifies that the `POST /api/highlights` API call was successful.
+    - [x] **Journey (Highlighting)**: The test navigates to a reading page, simulates text selection, asserts the "Discuss" popover appears, clicks it, and verifies that the `POST /api/highlights` API call was successful.
 * **Success Criteria**:
-    - [ ] Users can view their content and the highlighting interface works smoothly.
-    - [ ] Highlights are successfully saved to the database.
-    - [ ] The E2E highlighting journey passes.
+    - [x] Users can view their content and the highlighting interface works smoothly.
+    - [x] Highlights are successfully saved to the database.
+    - [x] The E2E highlighting journey passes.
 
 ***
 
