@@ -178,33 +178,33 @@ This phase uses Supabase's built-in auth to handle user sign-in and profile crea
 ***
 
 ## Phase 5: Real-time Matching & Discussion (Connecting People) 💬
-- [ ] **Phase 5 Complete**
+- [x] **Phase 5 Complete**
 
 This phase leverages **Supabase Realtime** instead of a custom WebSocket server.
 
 ### Task 5.1: Implement Real-time Matching & Chat
-- [ ] **Task 5.1 Complete**
-- [ ] 1.  **Enable Realtime**: In your Supabase dashboard, go to Database -> Replication and enable it for your `highlights` table (or a new dedicated `matchmaking` table if preferred).
-- [ ] 2.  **Matching Logic**:
-    - [ ] When a user clicks "Discuss this" (Task 4.1), their client not only saves the highlight but also joins a Supabase Realtime Presence channel (e.g., `content:${contentId}`) using the Supabase client. Track presence with user details like `userId` and `highlightId`.
-    - [ ] The client syncs the presence state to detect other users in the same channel (i.e., reading the same content in real-time).
-    - [ ] When another user is detected in the presence state, a match is made. The client can generate a unique chat room name (e.g., `chat:${highlightId}`) or use a serverless Edge Function for coordination.
-- [ ] 3.  **Discussion Interface**:
-    - [ ] Once a match is found, open a `Dialog` from `shadcn/ui`.
-    - [ ] Both users then subscribe to the new, unique chat channel (e.g., `chat:${highlightId}`).
-    - [ ] Messages sent by a user are broadcasted over this channel.
-    - [ ] The chat UI listens for incoming messages on the channel and displays them.
-- [ ] 4.  **Implement the 5-Minute Timer** in the Next.js component as before.
+- [x] **Task 5.1 Complete**
+- [x] 1.  **Enable Realtime**: In your Supabase dashboard, go to Database -> Replication and enable it for your `highlights` table (or a new dedicated `matchmaking` table if preferred).
+- [x] 2.  **Matching Logic**:
+    - [x] When a user clicks "Discuss this" (Task 4.1), their client not only saves the highlight but also joins a Supabase Realtime Presence channel (e.g., `content:${contentId}`) using the Supabase client. Track presence with user details like `userId` and `highlightId`.
+    - [x] The client syncs the presence state to detect other users in the same channel (i.e., reading the same content in real-time).
+    - [x] When another user is detected in the presence state, a match is made. The client can generate a unique chat room name (e.g., `chat:${highlightId}`) or use a serverless Edge Function for coordination.
+- [x] 3.  **Discussion Interface**:
+    - [x] Once a match is found, open a `Dialog` from `shadcn/ui`.
+    - [x] Both users then subscribe to the new, unique chat channel (e.g., `chat:${highlightId}`).
+    - [x] Messages sent by a user are broadcasted over this channel.
+    - [x] The chat UI listens for incoming messages on the channel and displays them.
+- [x] 4.  **Implement the 5-Minute Timer** in the Next.js component as before.
 
 * **Unit Tests**:
-    - [ ] Unit testing the real-time logic is difficult. Focus on testing the React components (`ChatInterface`) to ensure they correctly display messages passed as props.
+    - [x] Unit testing the real-time logic is difficult. Focus on testing the React components (`ChatInterface`) to ensure they correctly display messages passed as props.
 * **E2E Tests / Integration Script**:
-    - [ ] A standard Cypress test can't handle this. Write a separate script using the Supabase JS library that simulates two clients.
-    - [ ] **Test Script**: Client A joins the presence channel and tracks state. Client B does the same. Assert that each detects the other's presence for matching. Then, have them join a chat channel, send messages, and assert receipt.
+    - [x] A standard Cypress test can't handle this. Write a separate script using the Supabase JS library that simulates two clients.
+    - [x] **Test Script**: Client A joins the presence channel and tracks state. Client B does the same. Assert that each detects the other's presence for matching. Then, have them join a chat channel, send messages, and assert receipt.
 * **Success Criteria**:
-    - [ ] Users reading the same content can be matched in near real-time via presence tracking.
-    - [ ] The chat interface works, allowing matched users to send and receive messages instantly.
-    - [ ] The specialized two-client test script passes.
+    - [x] Users reading the same content can be matched in near real-time via presence tracking.
+    - [x] The chat interface works, allowing matched users to send and receive messages instantly.
+    - [x] The specialized two-client test script passes.
 
 ***
 
