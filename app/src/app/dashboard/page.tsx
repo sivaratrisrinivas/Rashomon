@@ -1,17 +1,49 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase';
 import Link from 'next/link';
 
+interface ContentItem {
+    id: string;
+    source_type: string;
+    source_info: string;
+    created_at: string;
+    processed_text: string;
+}
+
 const DashboardPage = () => {
     const [url, setUrl] = useState('');
     const [file, setFile] = useState<File | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [recentContent, setRecentContent] = useState<ContentItem[]>([]);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
     const router = useRouter();
+
+    // Fetch recent content
+    useEffect(() => {
+        const fetchRecentContent = async () => {
+            const supabase = getSupabaseClient();
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            const { data, error } = await supabase
+                .from('content')
+                .select('id, source_type, source_info, created_at, processed_text')
+                .eq('user_id', session.user.id)
+                .order('created_at', { ascending: false })
+                .limit(5);
+
+            if (!error && data) {
+                setRecentContent(data);
+            }
+        };
+
+        fetchRecentContent();
+    }, [isProcessing]);
 
     const handleUrlSubmit = async () => {
         if (!url.trim()) return;
@@ -27,8 +59,13 @@ const DashboardPage = () => {
                 body: JSON.stringify({ url, userId: session.user.id }),
             });
 
-            const { contentId } = await response.json();
-            if (contentId) router.push(`/reading/${contentId}`);
+            const { contentId, isExisting } = await response.json();
+            if (contentId) {
+                if (isExisting) {
+                    console.log('✅ Using existing content - perfect for matching with other readers!');
+                }
+                router.push(`/reading/${contentId}`);
+            }
         } catch (error) {
             console.error('Error processing URL:', error);
         } finally {
@@ -163,6 +200,79 @@ const DashboardPage = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Recent Content Section */}
+                {recentContent.length > 0 && (
+                    <div className="mt-12">
+                        <h2 className="text-2xl font-bold mb-4">Recent Content</h2>
+                        <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+                            <div className="divide-y">
+                                {recentContent.map((content) => {
+                                    const metadata = (() => {
+                                        try {
+                                            return JSON.parse(content.processed_text);
+                                        } catch {
+                                            return { metadata: { title: 'Untitled' } };
+                                        }
+                                    })();
+
+                                    const title = metadata.metadata?.title || content.source_info || 'Untitled';
+
+                                    return (
+                                        <div key={content.id} className="p-4 hover:bg-gray-50 transition">
+                                            <div className="flex items-center justify-between gap-4">
+                                                <div className="flex-1 min-w-0">
+                                                    <h3 className="font-medium text-gray-900 truncate">{title}</h3>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className="text-xs text-gray-500">
+                                                            {content.source_type === 'url' ? '🌐' : '📄'} {content.source_type}
+                                                        </span>
+                                                        <span className="text-xs text-gray-400">•</span>
+                                                        <span className="text-xs text-gray-500">
+                                                            {new Date(content.created_at).toLocaleDateString()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mt-2">
+                                                        <code className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 font-mono">
+                                                            ID: {content.id.substring(0, 8)}...
+                                                        </code>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(content.id);
+                                                                setCopiedId(content.id);
+                                                                setTimeout(() => setCopiedId(null), 2000);
+                                                            }}
+                                                            className="h-6 text-xs"
+                                                        >
+                                                            {copiedId === content.id ? '✓ Copied!' : 'Copy ID'}
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    onClick={() => router.push(`/reading/${content.id}`)}
+                                                    variant="default"
+                                                >
+                                                    Read
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Testing Helper */}
+                        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <p className="text-sm text-yellow-800">
+                                <strong>🧪 Testing Chat:</strong> To test the chat feature, copy a content ID above and share it with another user.
+                                Both users must navigate to the same content ID (e.g., <code className="bg-yellow-100 px-1 rounded">/reading/SAME_ID</code>)
+                                and click "Discuss this" on any highlighted text.
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Helper Text */}
                 <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">

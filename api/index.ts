@@ -6,11 +6,6 @@ import * as cheerio from 'cheerio';
 
 dotenv.config();
 
-console.log('[DIAGNOSTIC] Environment variables loaded');
-console.log('[DIAGNOSTIC] SUPABASE_URL exists:', !!process.env.SUPABASE_URL);
-console.log('[DIAGNOSTIC] SUPABASE_SERVICE_ROLE_KEY exists:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
-console.log('[DIAGNOSTIC] GOOGLE_CLOUD_VISION_API_KEY exists:', !!process.env.GOOGLE_CLOUD_VISION_API_KEY);
-console.log('[DIAGNOSTIC] GOOGLE_CLOUD_PROJECT_ID exists:', !!process.env.GOOGLE_CLOUD_PROJECT_ID);
 
 const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -40,6 +35,22 @@ const app = new Elysia()
   .post('/content/url', async ({ body, set }) => {
     const { url, userId } = body as { url: string, userId: string };
     try {
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      // Check if content from this URL already exists
+      const { data: existingContent, error: searchError } = await supabase
+        .from('content')
+        .select('id, processed_text')
+        .eq('source_type', 'url')
+        .eq('source_info', url)
+        .limit(1)
+        .single();
+      
+      // If content exists, return the existing contentId
+      if (existingContent && !searchError) {
+        return { success: true, contentId: existingContent.id, isExisting: true };
+      }
+      
       const response = await fetch(url);
       const html = await response.text();
       const $ = cheerio.load(html);
@@ -54,8 +65,8 @@ const app = new Elysia()
       const category = $('.category, .post-category, [class*="category"]').first().text().trim();
       const readingTime = $('[class*="reading-time"], .reading-time, .entry-meta').text().match(/(\d+\s*minute)/i)?.[0] || '';
       
-      // Remove unwanted elements first
-      $('script, style, nav, header, footer, aside, .navigation, .menu, .sidebar, .ad, .advertisement, .social-share, .comments, .related-posts, form, button, input, .newsletter, [class*="newsletter"], [class*="subscribe"]').remove();
+      // Remove unwanted elements first (including navigation, metadata, and promotional content)
+      $('script, style, nav, header, footer, aside, .navigation, .menu, .sidebar, .ad, .advertisement, .social-share, .comments, .related-posts, form, button, input, .newsletter, [class*="newsletter"], [class*="subscribe"], [class*="read-next"], [class*="sharing"], [class*="meta"], .entry-meta, .post-meta, .breadcrumb').remove();
       
       // Find article content with multiple strategies
       let $content = $('article .entry-content').first();
@@ -74,6 +85,20 @@ const app = new Elysia()
       
       // Extract paragraphs and headings
       const paragraphs: string[] = [];
+      const seenTexts = new Set<string>(); // Track unique content to prevent duplicates
+      
+      // Helper function to check if text is a substring or similar to existing content
+      const isSimilarOrDuplicate = (newText: string): boolean => {
+        for (const existing of seenTexts) {
+          // Exact match
+          if (existing === newText) return true;
+          // New text contains existing (new is longer version)
+          if (newText.includes(existing) && newText.length > existing.length * 2) return true;
+          // Existing contains new text (duplicate)
+          if (existing.includes(newText)) return true;
+        }
+        return false;
+      };
       
       // Try direct children first, then all descendants
       let elements = $content.find('p, blockquote, h2, h3, h4');
@@ -82,25 +107,37 @@ const app = new Elysia()
         const $elem = $(elem);
         const text = $elem.text().trim();
         
+        // Skip if empty or too short
+        if (!text || text.length < 10) return;
+        
+        // Skip very long paragraphs (likely malformed concatenations) - max ~1000 chars per paragraph
+        if (text.length > 1500) return;
+        
         // Skip navigation, footer, header content
         const parentClasses = $elem.parentsUntil($content).map((_, p) => $(p).attr('class') || '').get().join(' ');
-        if (parentClasses.match(/(nav|footer|header|menu|sidebar)/i)) return;
+        if (parentClasses.match(/(nav|footer|header|menu|sidebar|meta|breadcrumb|sharing|read-next|related)/i)) return;
         
-        if (text && text.length > 10) {
-          const tagName = $elem.prop('tagName')?.toLowerCase();
-          if (tagName === 'blockquote') {
-            paragraphs.push(`> ${text}`);
-          } else if (['h2', 'h3', 'h4'].includes(tagName || '')) {
-            paragraphs.push(`## ${text}`);
-          } else if (tagName === 'p') {
-            paragraphs.push(text);
-          }
+        // Skip if text contains metadata patterns
+        if (text.match(/reading time:|read next|share this|posted on|by |tags:|categories:/i)) return;
+        
+        // Skip if text matches or contains the title
+        if (text === title || text.includes(title)) return;
+        
+        // Skip if similar or duplicate to existing content
+        if (isSimilarOrDuplicate(text)) return;
+        
+        const tagName = $elem.prop('tagName')?.toLowerCase();
+        if (tagName === 'blockquote') {
+          paragraphs.push(`> ${text}`);
+          seenTexts.add(text);
+        } else if (['h2', 'h3', 'h4'].includes(tagName || '')) {
+          paragraphs.push(`## ${text}`);
+          seenTexts.add(text);
+        } else if (tagName === 'p') {
+          paragraphs.push(text);
+          seenTexts.add(text);
         }
       });
-      
-      console.log(`[SCRAPER DEBUG] Found ${paragraphs.length} paragraphs`);
-      console.log(`[SCRAPER DEBUG] Title: ${title}`);
-      console.log(`[SCRAPER DEBUG] First 3 paragraphs:`, paragraphs.slice(0, 3));
       
       // Build structured content
       const metadata = {
@@ -115,7 +152,7 @@ const app = new Elysia()
         paragraphs
       };
 
-      const supabase = createClient(supabaseUrl, supabaseKey);
+      // Create new content entry
       const { data, error } = await supabase.from('content').insert({
         user_id: userId,
         source_type: 'url',
@@ -125,7 +162,7 @@ const app = new Elysia()
 
       if (error) throw error;
       if (!data || data.length === 0) throw new Error('No data returned');
-      return { success: true, contentId: data[0].id };
+      return { success: true, contentId: data[0].id, isExisting: false };
     } catch (err) {
       set.status = 500;
       return { error: (err as Error).message };
@@ -134,16 +171,11 @@ const app = new Elysia()
   .post('/content/upload', async ({ body, set }) => {
     const { filePath, userId } = body as { filePath: string, userId: string };
     try {
-      console.log('[DIAGNOSTIC] /content/upload endpoint hit');
       const supabase = createClient(supabaseUrl, supabaseKey);
       const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(filePath);
 
-      console.log('[DIAGNOSTIC] About to lazy-load @google-cloud/vision');
       const vision = await import('@google-cloud/vision');
-      console.log('[DIAGNOSTIC] Vision library loaded, creating client');
-      console.log('[DIAGNOSTIC] Using auth config:', { key: googleApiKey ? 'KEY_EXISTS' : 'NO_KEY' });
       const client = new vision.ImageAnnotatorClient({ key: googleApiKey });
-      console.log('[DIAGNOSTIC] Vision client created, calling textDetection');
       const [result] = await client.textDetection(publicUrl);
       const detections = result.textAnnotations;
       const processedText = detections?.[0]?.description || '';

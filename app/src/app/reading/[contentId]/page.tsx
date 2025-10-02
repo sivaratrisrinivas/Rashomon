@@ -3,10 +3,10 @@
 import { use, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { getSupabaseClient } from '@/lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 type ReadingPageProps = { params: Promise<{ contentId: string }> };
 
@@ -43,30 +43,164 @@ export default function ReadingPage({ params }: ReadingPageProps) {
     return <ClientReadingView contentId={contentId} processedText={processedText} />;
 }
 
+// Helper function for fuzzy text matching
+function calculateSimilarity(text1: string, text2: string): number {
+    const s1 = text1.toLowerCase().trim();
+    const s2 = text2.toLowerCase().trim();
+
+    // If texts are identical, return 100% similarity
+    if (s1 === s2) return 1.0;
+
+    // Check if one contains the other (fuzzy match)
+    if (s1.includes(s2) || s2.includes(s1)) return 0.8;
+
+    // Simple word overlap similarity
+    const words1 = new Set(s1.split(/\s+/));
+    const words2 = new Set(s2.split(/\s+/));
+    const intersection = new Set([...words1].filter(x => words2.has(x)));
+    const union = new Set([...words1, ...words2]);
+
+    return intersection.size / union.size; // Jaccard similarity
+}
+
+function findParagraphIndex(paragraphs: string[], selectedText: string): number {
+    for (let i = 0; i < paragraphs.length; i++) {
+        if (paragraphs[i].includes(selectedText)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 function ClientReadingView({ contentId, processedText }: { contentId: string, processedText: string }) {
+    const router = useRouter();
     const [selection, setSelection] = useState('');
     const [position, setPosition] = useState({ x: 0, y: 0 });
-    const [matchFound, setMatchFound] = useState(false);
-    const [roomName, setRoomName] = useState('');
     const [presenceChannel, setPresenceChannel] = useState<RealtimeChannel | null>(null);
+    const [selectedParagraphIndex, setSelectedParagraphIndex] = useState<number>(-1);
+    const [checkingMatch, setCheckingMatch] = useState(false);
 
     // Parse the structured content
     let content;
     try {
         content = JSON.parse(processedText);
+        // Remove duplicate paragraphs if they exist
+        if (content.paragraphs && Array.isArray(content.paragraphs)) {
+            content.paragraphs = [...new Set(content.paragraphs)];
+        }
     } catch {
         // Fallback for old plain text content
         content = { metadata: { title: 'Reading View' }, paragraphs: [processedText] };
     }
 
+    // Check for existing matches when text is selected
+    const checkForExistingMatch = async (selectedText: string, paragraphIndex: number) => {
+        const supabase = getSupabaseClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return false;
+
+        const channelName = `content:${contentId}`;
+
+        // Create a temporary channel to check presence (must be same channel name to see presence)
+        const tempChannel = supabase.channel(channelName, {
+            config: {
+                presence: {
+                    key: `temp-${session.user.id}-${Date.now()}`
+                }
+            }
+        });
+
+        return new Promise<boolean>((resolve) => {
+            let resolved = false;
+            tempChannel
+                .on('presence', { event: 'sync' }, () => {
+                    if (resolved) return;
+
+                    const presenceState = tempChannel.presenceState();
+                    const currentUserId = session.user.id;
+
+                    // Get all presence entries with their paragraph info
+                    const allPresences: Array<{ userId: string, selectedText: string, paragraphIndex: number }> = [];
+                    Object.values(presenceState).forEach((presences: any) => {
+                        presences.forEach((presence: any) => {
+                            if (presence.userId && presence.userId !== currentUserId) {
+                                allPresences.push({
+                                    userId: presence.userId,
+                                    selectedText: presence.selectedText || '',
+                                    paragraphIndex: presence.paragraphIndex ?? -1
+                                });
+                            }
+                        });
+                    });
+
+                    // Check for paragraph-level matches
+                    let matchFound = false;
+                    for (const otherPresence of allPresences) {
+                        const similarity = calculateSimilarity(selectedText, otherPresence.selectedText);
+                        const sameOrAdjacentParagraph =
+                            Math.abs(paragraphIndex - otherPresence.paragraphIndex) <= 1;
+
+                        if (sameOrAdjacentParagraph && similarity >= 0.6) {
+                            matchFound = true;
+                            break;
+                        }
+                    }
+
+                    resolved = true;
+                    tempChannel.unsubscribe();
+                    resolve(matchFound);
+                })
+                .subscribe();
+
+            // Timeout after 1 second if no response
+            setTimeout(() => {
+                if (!resolved) {
+                    resolved = true;
+                    tempChannel.unsubscribe();
+                    resolve(false);
+                }
+            }, 1000);
+        });
+    };
+
     useEffect(() => {
-        const handleMouseUp = (e: MouseEvent) => {
+        const handleMouseUp = async (e: MouseEvent) => {
             const sel = window.getSelection()?.toString().trim();
             if (sel) {
-                setSelection(sel);
-                setPosition({ x: e.pageX, y: e.pageY });
+                // Find which paragraph this selection belongs to
+                const paraIndex = findParagraphIndex(content.paragraphs, sel);
+
+                // Check for existing match
+                setCheckingMatch(true);
+                const hasMatch = await checkForExistingMatch(sel, paraIndex);
+                setCheckingMatch(false);
+
+                if (hasMatch) {
+                    // Save highlight before navigating
+                    const supabase = getSupabaseClient();
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (session) {
+                        await fetch('http://localhost:3001/highlights', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contentId,
+                                text: sel,
+                                context: processedText.substring(0, 100),
+                                userId: session.user.id
+                            }),
+                        });
+                    }
+                    router.push(`/chat/${contentId}`);
+                } else {
+                    // No match, show discuss button
+                    setSelection(sel);
+                    setPosition({ x: e.pageX, y: e.pageY });
+                    setSelectedParagraphIndex(paraIndex);
+                }
             } else {
                 setSelection('');
+                setSelectedParagraphIndex(-1);
             }
         };
         document.addEventListener('mouseup', handleMouseUp);
@@ -83,9 +217,16 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
     }, [presenceChannel]);
 
     const handleDiscuss = async () => {
+        if (presenceChannel) {
+            await presenceChannel.unsubscribe();
+            setPresenceChannel(null);
+        }
+
         const supabase = getSupabaseClient();
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
+        if (!session) {
+            return;
+        }
 
         // Save highlight (from Phase 4)
         const response = await fetch('http://localhost:3001/highlights', {
@@ -100,7 +241,6 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
         });
 
         if (!response.ok) {
-            console.error('Failed to save highlight');
             setSelection('');
             return;
         }
@@ -108,29 +248,26 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
         const { highlightId } = await response.json();
 
         // Join Presence channel for matching
-        const channel = supabase.channel(`content:${contentId}`);
+        const channelName = `content:${contentId}`;
+        const channel = supabase.channel(channelName);
 
         channel
             .on('presence', { event: 'sync' }, () => {
-                const presenceState = channel.presenceState();
-                const currentUserId = session.user.id;
-
-                // Check for other users in the presence state
-                const otherUsers = Object.values(presenceState)
-                    .flat()
-                    .filter((state: any) => state.userId !== currentUserId);
-
-                if (otherUsers.length > 0) {
-                    setMatchFound(true);
-                    setRoomName(`chat:${highlightId}`);
-                    console.log('Match found! Starting chat...');
-                }
+                // Presence synced
+            })
+            .on('presence', { event: 'join' }, () => {
+                // User joined
+            })
+            .on('presence', { event: 'leave' }, () => {
+                // User left
             })
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
                     await channel.track({
                         userId: session.user.id,
                         highlightId,
+                        selectedText: selection,
+                        paragraphIndex: selectedParagraphIndex,
                         timestamp: new Date().toISOString()
                     });
                 }
@@ -138,6 +275,9 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
 
         setPresenceChannel(channel);
         setSelection('');
+
+        // Navigate to chat immediately - matching will happen there
+        router.push(`/chat/${contentId}`);
     };
 
     return (
@@ -191,128 +331,23 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                         <div style={{ position: 'absolute', top: position.y, left: position.x }} />
                     </PopoverTrigger>
                     <PopoverContent>
-                        <Button onClick={handleDiscuss}>Discuss this</Button>
+                        <Button onClick={handleDiscuss}>
+                            Discuss this
+                        </Button>
                     </PopoverContent>
                 </Popover>
             )}
 
-            {/* Chat Interface Dialog */}
-            {matchFound && <ChatInterface roomName={roomName} onClose={() => setMatchFound(false)} />}
-        </div>
-    );
-}
-
-// Chat Interface Component
-function ChatInterface({ roomName, onClose }: { roomName: string; onClose: () => void }) {
-    const [messages, setMessages] = useState<{ id: string; text: string; userId: string; timestamp: string }[]>([]);
-    const [newMessage, setNewMessage] = useState('');
-    const [chatChannel, setChatChannel] = useState<RealtimeChannel | null>(null);
-    const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
-
-    useEffect(() => {
-        const supabase = getSupabaseClient();
-
-        // Join chat channel
-        const channel = supabase.channel(roomName);
-
-        channel
-            .on('broadcast', { event: 'message' }, (payload) => {
-                setMessages((prev) => [...prev, payload.payload]);
-            })
-            .subscribe();
-
-        setChatChannel(channel);
-
-        // 5-minute timer
-        const timer = setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    onClose();
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-
-        return () => {
-            clearInterval(timer);
-            channel.unsubscribe();
-        };
-    }, [roomName, onClose]);
-
-    const sendMessage = async () => {
-        if (!newMessage.trim() || !chatChannel) return;
-
-        const supabase = getSupabaseClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-
-        const message = {
-            id: `${Date.now()}-${Math.random()}`,
-            text: newMessage,
-            userId: session.user.id,
-            timestamp: new Date().toISOString(),
-        };
-
-        await chatChannel.send({
-            type: 'broadcast',
-            event: 'message',
-            payload: message,
-        });
-
-        setMessages((prev) => [...prev, message]);
-        setNewMessage('');
-    };
-
-    const formatTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
-
-    return (
-        <Dialog open={true} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl max-h-[80vh]">
-                <DialogHeader>
-                    <DialogTitle className="flex justify-between items-center">
-                        <span>Discussion</span>
-                        <span className="text-sm font-mono text-muted-foreground">
-                            Time left: {formatTime(timeLeft)}
-                        </span>
-                    </DialogTitle>
-                </DialogHeader>
-
-                <div className="flex flex-col h-[500px]">
-                    {/* Messages */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 rounded-lg mb-4">
-                        {messages.length === 0 ? (
-                            <p className="text-center text-muted-foreground">No messages yet. Start the conversation!</p>
-                        ) : (
-                            messages.map((msg) => (
-                                <div key={msg.id} className="bg-white p-3 rounded-lg shadow-sm">
-                                    <p className="text-sm text-slate-700">{msg.text}</p>
-                                    <p className="text-xs text-slate-400 mt-1">
-                                        {new Date(msg.timestamp).toLocaleTimeString()}
-                                    </p>
-                                </div>
-                            ))
-                        )}
-                    </div>
-
-                    {/* Input */}
-                    <div className="flex gap-2">
-                        <Input
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                            placeholder="Type your message..."
-                            className="flex-1"
-                        />
-                        <Button onClick={sendMessage}>Send</Button>
+            {/* Checking for match indicator */}
+            {checkingMatch && (
+                <div className="fixed bottom-4 right-4 bg-indigo-500 text-white px-6 py-3 rounded-lg shadow-lg">
+                    <div className="flex items-center gap-2">
+                        <div className="animate-spin">🔄</div>
+                        <div className="font-medium">Checking for matches...</div>
                     </div>
                 </div>
-            </DialogContent>
-        </Dialog>
+            )}
+
+        </div>
     );
 }
