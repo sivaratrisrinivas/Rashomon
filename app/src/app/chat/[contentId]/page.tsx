@@ -3,10 +3,19 @@
 import { use, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { getSupabaseClient } from '@/lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Copy, Check } from 'lucide-react';
 
 type ChatPageProps = { params: Promise<{ contentId: string }> };
 
@@ -21,6 +30,13 @@ export default function ChatPage({ params }: ChatPageProps) {
     const [currentUserId, setCurrentUserId] = useState<string>('');
     const [otherUserPresent, setOtherUserPresent] = useState(false);
     const [contentTitle, setContentTitle] = useState('');
+    const [showModal, setShowModal] = useState(false);
+    const [inviteLink, setInviteLink] = useState<string | null>(null);
+    const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
+    const [sessionId, setSessionId] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
+    const [isInitiator, setIsInitiator] = useState(false);
+    const [timerExpired, setTimerExpired] = useState(false);
 
     // Fetch content title
     useEffect(() => {
@@ -147,7 +163,7 @@ export default function ChatPage({ params }: ChatPageProps) {
                 setTimeLeft((prev) => {
                     if (prev <= 1) {
                         clearInterval(timer);
-                        router.push(`/reading/${contentId}`);
+                        setTimerExpired(true);
                         return 0;
                     }
                     return prev - 1;
@@ -198,6 +214,29 @@ export default function ChatPage({ params }: ChatPageProps) {
                 return [...prev, message];
             });
             setNewMessage('');
+
+            // Save message to backend
+            const response = await fetch('http://localhost:3001/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contentId: contentId,
+                    userId: session.user.id,
+                    message: newMessage,
+                    timestamp: message.timestamp,
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.sessionId && !sessionId) {
+                    setSessionId(data.sessionId);
+                    // First message sender is the initiator
+                    if (messages.length === 0) {
+                        setIsInitiator(true);
+                    }
+                }
+            }
         } catch (error) {
             console.error('Error sending message:', error);
         }
@@ -209,46 +248,91 @@ export default function ChatPage({ params }: ChatPageProps) {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
+    const generateInvite = async () => {
+        if (!sessionId) {
+            console.error('No session ID available');
+            return;
+        }
+
+        setIsGeneratingInvite(true);
+        try {
+            const response = await fetch('http://localhost:3001/invites', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setInviteLink(data.link);
+            }
+        } catch (error) {
+            console.error('Error generating invite:', error);
+        } finally {
+            setIsGeneratingInvite(false);
+        }
+    };
+
+    const copyInviteLink = async () => {
+        if (inviteLink) {
+            await navigator.clipboard.writeText(inviteLink);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }
+    };
+
+    // Show modal when timer expires AND user is the initiator
+    useEffect(() => {
+        if (timerExpired && isInitiator) {
+            setShowModal(true);
+        }
+    }, [timerExpired, isInitiator]);
+
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-            {/* Header */}
-            <header className="border-b bg-white shadow-sm sticky top-0 z-10">
-                <div className="max-w-4xl mx-auto px-6 py-4 flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                        <Link href={`/reading/${contentId}`}>
-                            <Button variant="ghost" size="sm">
-                                ← Back to Reading
-                            </Button>
+        <div className="min-h-screen flex flex-col">
+            {/* Header - Redesigned */}
+            <header className="border-b border-border/30 sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
+                <div className="max-w-4xl mx-auto px-8 py-5 flex justify-between items-center">
+                    <div className="flex items-center gap-6">
+                        <Link
+                            href={`/reading/${contentId}`}
+                            className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            ← Read
                         </Link>
-                        <div>
-                            <h1 className="text-lg font-semibold">{contentTitle}</h1>
-                            <p className="text-sm text-slate-500">
-                                {otherUserPresent ? (
-                                    <span className="text-green-600">● Other reader present</span>
-                                ) : (
-                                    <span className="text-yellow-600">⏳ Waiting for other reader...</span>
-                                )}
-                            </p>
+                        <div className="border-l border-border/30 pl-6">
+                            <h1 className="text-[13px] font-medium truncate max-w-md">{contentTitle}</h1>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                <div className={`w-1.5 h-1.5 rounded-full ${otherUserPresent ? 'bg-foreground' : 'bg-muted-foreground'}`} />
+                                <p className="text-[10px] text-muted-foreground">
+                                    {otherUserPresent ? 'Connected' : 'Waiting for reader'}
+                                </p>
+                            </div>
                         </div>
                     </div>
-                    <div className="text-sm font-mono text-slate-600">
-                        Time left: {formatTime(timeLeft)}
+                    <div className="text-[10px] text-muted-foreground font-mono tabular-nums">
+                        {formatTime(timeLeft)}
                     </div>
                 </div>
             </header>
 
-            {/* Chat Interface */}
-            <main className="max-w-4xl mx-auto px-6 py-8">
-                <div className="bg-white rounded-lg border shadow-sm">
+            {/* Chat Interface - Redesigned */}
+            <main className="max-w-4xl mx-auto px-8 flex-1 flex flex-col py-6">
+                <div className="flex-1 flex flex-col">
                     {/* Messages Area */}
-                    <div className="h-[60vh] overflow-y-auto p-6 space-y-4">
+                    <div className="flex-1 overflow-y-auto px-2 py-6 space-y-5">
                         {messages.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-full text-center">
-                                <div className="text-6xl mb-4">💬</div>
-                                <p className="text-lg font-medium text-slate-700">Start the conversation!</p>
-                                <p className="text-sm text-slate-500 mt-2">
-                                    Share your thoughts about this content with another reader.
-                                </p>
+                            <div className="flex items-center justify-center h-full">
+                                <div className="text-center space-y-2">
+                                    <p className="text-[12px] text-muted-foreground">
+                                        {otherUserPresent ? 'Say something to start' : 'Waiting for another reader'}
+                                    </p>
+                                    {!otherUserPresent && (
+                                        <p className="text-[10px] text-muted-foreground/60">
+                                            You'll be notified when someone joins
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         ) : (
                             messages.map((msg) => {
@@ -259,18 +343,24 @@ export default function ChatPage({ params }: ChatPageProps) {
                                         className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
                                     >
                                         <div
-                                            className={`max-w-[70%] p-4 rounded-lg shadow-sm ${isOwnMessage
-                                                ? 'bg-blue-500 text-white'
-                                                : 'bg-slate-100 text-slate-900'
-                                                }`}
+                                            className={`max-w-[70%] space-y-1.5 ${isOwnMessage ? 'items-end' : 'items-start'} flex flex-col`}
                                         >
-                                            <p className="text-xs font-medium mb-1 opacity-75">
-                                                {isOwnMessage ? 'You' : 'Other Reader'}
-                                            </p>
-                                            <p className="text-sm leading-relaxed">{msg.text}</p>
-                                            <p className={`text-xs mt-2 ${isOwnMessage ? 'text-blue-100' : 'text-slate-400'}`}>
-                                                {new Date(msg.timestamp).toLocaleTimeString()}
-                                            </p>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-[10px] text-muted-foreground">
+                                                    {isOwnMessage ? 'You' : 'Reader'}
+                                                </p>
+                                                <p className="text-[9px] text-muted-foreground/50">
+                                                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                            </div>
+                                            <div
+                                                className={`px-4 py-2.5 ${isOwnMessage
+                                                    ? 'bg-foreground text-background'
+                                                    : 'bg-muted text-foreground border border-border/30'
+                                                    }`}
+                                            >
+                                                <p className="text-[13px] leading-[1.6]">{msg.text}</p>
+                                            </div>
                                         </div>
                                     </div>
                                 );
@@ -278,41 +368,94 @@ export default function ChatPage({ params }: ChatPageProps) {
                         )}
                     </div>
 
-                    {/* Input Area */}
-                    <div className="border-t p-4">
-                        <div className="flex gap-2">
+                    {/* Input Area - Streamlined */}
+                    <div className="border-t border-border/30 pt-4 pb-2">
+                        <div className="flex items-end gap-2">
                             <Input
                                 value={newMessage}
                                 onChange={(e) => setNewMessage(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                                placeholder="Type your message..."
-                                className="flex-1 text-base"
+                                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                                placeholder={otherUserPresent ? "Type a message..." : "Waiting..."}
+                                className="flex-1 h-10 text-[13px] bg-muted/30 border-border/30"
                                 disabled={!otherUserPresent}
                             />
                             <Button
                                 onClick={sendMessage}
                                 disabled={!newMessage.trim() || !otherUserPresent}
-                                size="lg"
+                                className="h-10 px-4 text-[11px] font-normal"
+                                variant="outline"
                             >
                                 Send
                             </Button>
                         </div>
-                        {!otherUserPresent && (
-                            <p className="text-xs text-yellow-600 mt-2">
-                                ⏳ Waiting for another reader to join...
-                            </p>
-                        )}
+                        <p className="text-[9px] text-muted-foreground/60 mt-2 pl-1">
+                            Press Enter to send
+                        </p>
                     </div>
                 </div>
-
-                {/* Helper Text */}
-                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-800">
-                        <strong>💡 Tip:</strong> You can return to the reading page to highlight more text
-                        and come back to this chat. Your conversation will continue where you left off!
-                    </p>
-                </div>
             </main>
+
+            {/* Post-Chat Invite Modal - Redesigned */}
+            <Dialog open={showModal} onOpenChange={setShowModal}>
+                <DialogContent data-testid="aha-modal" className="border-border/30 max-w-md">
+                    <DialogHeader className="space-y-3">
+                        <DialogTitle className="text-[14px] font-medium">Enjoyed the conversation?</DialogTitle>
+                        <DialogDescription className="text-[11px] text-muted-foreground leading-relaxed">
+                            Share Rashomon with someone who'd appreciate spontaneous discussions around reading
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {inviteLink ? (
+                        <div className="space-y-3 pt-2">
+                            <div className="p-3 bg-muted/50 border border-border/30 flex items-center gap-2">
+                                <p className="text-[10px] font-mono break-all flex-1 text-muted-foreground" data-testid="invite-link">
+                                    {inviteLink}
+                                </p>
+                                <Button
+                                    onClick={copyInviteLink}
+                                    size="icon"
+                                    variant="ghost"
+                                    className="shrink-0 h-7 w-7"
+                                    title="Copy link"
+                                >
+                                    {copied ? (
+                                        <Check className="h-3.5 w-3.5" />
+                                    ) : (
+                                        <Copy className="h-3.5 w-3.5" />
+                                    )}
+                                </Button>
+                            </div>
+                            <Button
+                                onClick={copyInviteLink}
+                                variant="outline"
+                                className="w-full h-9 text-[11px] font-normal"
+                                disabled={copied}
+                            >
+                                {copied ? 'Copied to clipboard' : 'Copy invite link'}
+                            </Button>
+                        </div>
+                    ) : (
+                        <DialogFooter className="flex-row gap-2 pt-2">
+                            <Button
+                                variant="ghost"
+                                onClick={() => setShowModal(false)}
+                                className="flex-1 h-9 text-[11px] font-normal"
+                            >
+                                Not now
+                            </Button>
+                            <Button
+                                onClick={generateInvite}
+                                disabled={isGeneratingInvite}
+                                variant="outline"
+                                data-testid="yes-invite-button"
+                                className="flex-1 h-9 text-[11px] font-normal"
+                            >
+                                {isGeneratingInvite ? 'Generating...' : 'Generate link'}
+                            </Button>
+                        </DialogFooter>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

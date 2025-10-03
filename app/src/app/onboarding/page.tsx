@@ -36,28 +36,42 @@ const OnboardingPage = () => {
 
     return (
         <Dialog open={true}>
-            <DialogContent>
+            <DialogContent className="border-border/50">
                 <DialogHeader>
-                    <DialogTitle>Select Your Reading Preferences</DialogTitle>
+                    <DialogTitle className="text-[14px] font-medium">Reading Preferences</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4">
-                    {preferencesOptions.map((option) => (
-                        <div key={option} className="flex items-center space-x-2">
-                            <Checkbox
-                                id={option}
-                                checked={selectedPreferences.includes(option)}
-                                onCheckedChange={(checked) => {
-                                    if (checked) {
-                                        setSelectedPreferences([...selectedPreferences, option]);
-                                    } else {
-                                        setSelectedPreferences(selectedPreferences.filter((p) => p !== option));
-                                    }
-                                }}
-                            />
-                            <Label htmlFor={option}>{option.charAt(0).toUpperCase() + option.slice(1)}</Label>
-                        </div>
-                    ))}
-                    <Button onClick={handleSubmit}>Submit</Button>
+                <div className="space-y-6">
+                    <div className="space-y-3">
+                        {preferencesOptions.map((option) => (
+                            <div key={option} className="flex items-center space-x-3">
+                                <Checkbox
+                                    id={option}
+                                    checked={selectedPreferences.includes(option)}
+                                    onCheckedChange={(checked) => {
+                                        if (checked) {
+                                            setSelectedPreferences([...selectedPreferences, option]);
+                                        } else {
+                                            setSelectedPreferences(selectedPreferences.filter((p) => p !== option));
+                                        }
+                                    }}
+                                    className="data-[state=checked]:bg-foreground data-[state=checked]:border-foreground"
+                                />
+                                <Label
+                                    htmlFor={option}
+                                    className="text-[13px] font-normal cursor-pointer"
+                                >
+                                    {option.charAt(0).toUpperCase() + option.slice(1)}
+                                </Label>
+                            </div>
+                        ))}
+                    </div>
+                    <Button
+                        onClick={handleSubmit}
+                        variant="outline"
+                        className="w-full h-9 text-[12px] font-normal"
+                    >
+                        Continue
+                    </Button>
                 </div>
             </DialogContent>
         </Dialog>

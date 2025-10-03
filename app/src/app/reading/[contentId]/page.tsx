@@ -33,11 +33,19 @@ export default function ReadingPage({ params }: ReadingPageProps) {
     }, [contentId]);
 
     if (loading) {
-        return <div>Loading...</div>;
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <p className="text-[12px] text-muted-foreground">Loading</p>
+            </div>
+        );
     }
 
     if (!processedText) {
-        return <div>Content not found</div>;
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <p className="text-[12px] text-muted-foreground">Content not found</p>
+            </div>
+        );
     }
 
     return <ClientReadingView contentId={contentId} processedText={processedText} />;
@@ -281,41 +289,53 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-            <div className="max-w-3xl mx-auto px-6 py-12">
+        <div className="min-h-screen">
+            {/* Header - Sticky with back navigation */}
+            <header className="border-b border-border/30 sticky top-0 bg-background/95 backdrop-blur-sm z-10">
+                <div className="max-w-2xl mx-auto px-8 py-5">
+                    <Link
+                        href="/dashboard"
+                        className="text-[11px] text-muted-foreground hover:text-foreground transition-colors inline-block"
+                    >
+                        ← Library
+                    </Link>
+                </div>
+            </header>
+
+            <div className="max-w-2xl mx-auto px-8 py-16">
                 {/* Header */}
-                <div className="mb-8 border-b border-slate-200 pb-8">
+                <div className="mb-16 pb-12 border-b border-border/30">
                     {content.metadata.category && (
-                        <div className="text-sm font-medium text-slate-500 mb-2">
+                        <div className="text-[11px] text-muted-foreground mb-3 tracking-wide uppercase">
                             {content.metadata.category}
                             {content.metadata.readingTime && (
-                                <span className="ml-3">| {content.metadata.readingTime}</span>
+                                <span className="ml-3">· {content.metadata.readingTime}</span>
                             )}
                         </div>
                     )}
-                    <h1 className="text-4xl font-bold text-slate-900 leading-tight">
+                    <h1 className="text-[28px] font-normal leading-[1.3] tracking-tight">
                         {content.metadata.title}
                     </h1>
                 </div>
 
                 {/* Content */}
-                <article className="prose prose-lg prose-slate max-w-none" id="content-text">
+                <article className="space-y-6" id="content-text">
                     {content.paragraphs.map((para: string, idx: number) => {
                         if (para.startsWith('> ')) {
                             return (
-                                <blockquote key={idx} className="border-l-4 border-slate-300 pl-6 py-2 my-6 italic text-slate-700">
+                                <blockquote key={idx} className="border-l border-border/50 pl-6 py-1 italic text-[14px] text-muted-foreground leading-[1.7]">
                                     {para.substring(2)}
                                 </blockquote>
                             );
                         } else if (para.startsWith('## ')) {
                             return (
-                                <h2 key={idx} className="text-2xl font-semibold text-slate-900 mt-8 mb-4">
+                                <h2 key={idx} className="text-[18px] font-medium mt-12 mb-4 tracking-tight">
                                     {para.substring(3)}
                                 </h2>
                             );
                         } else {
                             return (
-                                <p key={idx} className="text-slate-700 leading-relaxed mb-6">
+                                <p key={idx} className="text-[14px] leading-[1.7] text-foreground/90">
                                     {para}
                                 </p>
                             );
@@ -324,27 +344,42 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                 </article>
             </div>
 
-            {/* Selection popover */}
+            {/* Floating Chat Button - Always visible */}
+            <div className="fixed bottom-8 right-8 z-20">
+                <Button
+                    onClick={() => router.push(`/chat/${contentId}`)}
+                    className="h-12 w-12 rounded-full p-0 shadow-lg hover:shadow-xl transition-shadow"
+                    title="Start discussion"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                </Button>
+            </div>
+
+            {/* Selection popover - Redesigned */}
             {selection && (
                 <Popover open={!!selection}>
                     <PopoverTrigger asChild>
                         <div style={{ position: 'absolute', top: position.y, left: position.x }} />
                     </PopoverTrigger>
-                    <PopoverContent>
-                        <Button onClick={handleDiscuss}>
+                    <PopoverContent className="border-border/50 shadow-sm p-1 w-auto">
+                        <Button
+                            onClick={handleDiscuss}
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-3 text-[11px] font-normal"
+                        >
                             Discuss this
                         </Button>
                     </PopoverContent>
                 </Popover>
             )}
 
-            {/* Checking for match indicator */}
+            {/* Checking for match indicator - Improved */}
             {checkingMatch && (
-                <div className="fixed bottom-4 right-4 bg-indigo-500 text-white px-6 py-3 rounded-lg shadow-lg">
-                    <div className="flex items-center gap-2">
-                        <div className="animate-spin">🔄</div>
-                        <div className="font-medium">Checking for matches...</div>
-                    </div>
+                <div className="fixed bottom-24 right-8 bg-foreground text-background px-3 py-1.5 text-[10px] font-medium">
+                    Matching...
                 </div>
             )}
 

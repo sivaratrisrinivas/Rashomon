@@ -217,6 +217,125 @@ const app = new Elysia()
     }
     return { success: true, highlightId: data[0].id };
   })
+  .post('/messages', async ({ body, set }) => {
+    const { highlightId, userId, message, timestamp, contentId } = body as { 
+      highlightId?: string,
+      contentId?: string,
+      userId: string, 
+      message: string, 
+      timestamp: string 
+    };
+
+    if ((!highlightId && !contentId) || !userId || !message) {
+      set.status = 400;
+      return { error: 'Missing required fields (need highlightId or contentId, userId, and message)' };
+    }
+
+    try {
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      const isHighlightChat = !!highlightId;
+      const isContentChat = !!contentId;
+      
+      console.log('\n📨 /messages endpoint:', isHighlightChat ? 'HIGHLIGHT-LEVEL' : 'CONTENT-LEVEL', 'chat');
+
+      const messageEntry = {
+        userId,
+        message,
+        timestamp: timestamp || new Date().toISOString()
+      };
+
+      // Check for existing session based on chat type
+      let existingSession;
+      if (isHighlightChat) {
+        const { data } = await supabase
+          .from('chat_sessions')
+          .select('id, transcript')
+          .eq('highlight_id', highlightId)
+          .single();
+        existingSession = data;
+      } else {
+        const { data } = await supabase
+          .from('chat_sessions')
+          .select('id, transcript')
+          .eq('content_id', contentId)
+          .single();
+        existingSession = data;
+      }
+
+      if (existingSession) {
+        // Append to existing transcript
+        console.log('  ✏️  Updating session:', existingSession.id);
+        const updatedTranscript = [...(existingSession.transcript || []), messageEntry];
+        const { error } = await supabase
+          .from('chat_sessions')
+          .update({ transcript: updatedTranscript })
+          .eq('id', existingSession.id);
+
+        if (error) throw error;
+        return { success: true, sessionId: existingSession.id };
+      } else {
+        // Create new session with appropriate ID field
+        console.log('  🆕 Creating new session...');
+        const insertData: any = {
+          participants: [userId],
+          transcript: [messageEntry]
+        };
+        
+        if (isHighlightChat) {
+          insertData.highlight_id = highlightId;
+        } else {
+          insertData.content_id = contentId;
+        }
+        
+        const { data, error } = await supabase
+          .from('chat_sessions')
+          .insert(insertData)
+          .select();
+
+        if (error) {
+          console.error('  ❌ Error:', error.message);
+          throw error;
+        }
+        
+        console.log('  ✅ Session created:', data[0].id);
+        return { success: true, sessionId: data[0].id };
+      }
+    } catch (err) {
+      console.error('Messages endpoint error:', err);
+      set.status = 500;
+      return { error: (err as Error).message };
+    }
+  })
+  .post('/invites', async ({ body, set }) => {
+    const { sessionId } = body as { sessionId: string };
+    
+    console.log('\n📨 INVITES ENDPOINT CALLED');
+    console.log('  - sessionId:', sessionId);
+    
+    if (!sessionId) {
+      set.status = 400;
+      return { error: 'Session ID required' };
+    }
+
+    const inviteCode = crypto.randomUUID();
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    console.log('  - Generated invite code:', inviteCode);
+    
+    const { error } = await supabase.from('invites').insert({ 
+      code: inviteCode, 
+      session_id: sessionId 
+    });
+
+    if (error) {
+      console.error('❌ Error creating invite:', error.message);
+      set.status = 500;
+      return { error: error.message };
+    }
+    
+    console.log('✅ Invite created successfully');
+    return { link: `https://your-app.com/invite/${inviteCode}` };
+  })
   .listen(3001);
 
 console.log(`Server running at ${app.server?.hostname}:${app.server?.port}`);

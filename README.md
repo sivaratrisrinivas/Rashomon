@@ -40,9 +40,9 @@ It's designed for those "aha!" moments when you want to share a reaction immedia
 
 4. **Read**: View your content in a clean, distraction-free reading interface.
 
-5. **Highlight & Discuss** _(Coming Soon)_: Select any passage, and we'll match you with someone else reading the same content. Chat for 5 minutes about that specific highlight.
+5. **Discuss**: Click "Chat" on any reading page to instantly connect with other readers of that content. Discuss the entire piece or highlight specific passages to find readers focused on the same section.
 
-6. **Connect** _(Coming Soon)_: After a great conversation, you can exchange invite codes to keep in touch.
+6. **Connect**: After a meaningful 5-minute conversation, you'll be prompted to generate an invite link. Share Rashomon with friends who'd appreciate spontaneous discussions around shared reading.
 
 ---
 
@@ -67,15 +67,25 @@ Rashomon is being developed in phases. Here's what's complete:
 - Content storage and management
 - Reading interface for viewing processed content
 
-### 🚧 Phase 4: Highlighting Interface (In Progress)
+### ✅ Phase 4: Highlighting Interface (Complete)
 - Text selection and highlighting
 - Real-time matching with other readers
-- Ephemeral chat rooms for discussions
+- Intelligent paragraph-level matching
+
+### ✅ Phase 5: Real-Time Discussion (Complete)
+- Supabase Realtime presence tracking
+- Live chat with matched readers
+- 5-minute timed discussion sessions
+- Broadcast messaging system
+
+### ✅ Phase 6: Session Management (Complete)
+- Chat transcript recording
+- Session persistence in database
+- Post-chat invite generation
+- Friend referral system
 
 ### 📋 Coming Next
-- **Phase 5**: Real-time matching and discussion features
-- **Phase 6**: Session recording and friend invites
-- **Phase 7**: Deployment and launch
+- **Phase 7**: Deployment and launch to production
 
 ---
 
@@ -230,11 +240,11 @@ When you paste a web address, we fetch that page's HTML, parse it, and extract j
 ### OCR (Optical Character Recognition)
 Upload a screenshot, photo of a page, or PDF, and Google's Vision API reads the text like a human would. It's surprisingly accurate, even with handwriting or unusual fonts.
 
-### Real-Time Matching _(Coming Soon)_
-Using Supabase's real-time features, we can detect when multiple people are reading the same content simultaneously. When you highlight text, we check if anyone else is online with that content and create an instant connection.
+### Real-Time Matching
+Using Supabase's real-time features, we detect when multiple people are reading the same content simultaneously. When you're reading, you can instantly connect with other readers through a content-level chat, or highlight specific text to find readers focused on the same passage.
 
-### Ephemeral Chats _(Coming Soon)_
-Conversations last 5 minutes by default – long enough to exchange ideas but short enough to stay focused. This prevents endless threads and encourages meaningful, in-the-moment discussion.
+### Ephemeral Chats
+Conversations last 5 minutes by default – long enough to exchange ideas but short enough to stay focused. This prevents endless threads and encourages meaningful, in-the-moment discussion. After a great chat, you can generate an invite link to share Rashomon with others.
 
 ---
 
@@ -271,21 +281,22 @@ This is currently a learning project and personal experiment. If you're interest
 
 ## Roadmap
 
-**Short-term (Next Month):**
-- [ ] Complete highlighting interface
-- [ ] Implement real-time reader matching
-- [ ] Build chat functionality
+**Immediate (This Week):**
+- [ ] Deploy backend to production hosting
+- [ ] Deploy frontend to Vercel
+- [ ] Set up CI/CD pipeline
+- [ ] Final production testing
 
-**Medium-term (Next Quarter):**
-- [ ] Add session recording
-- [ ] Implement friend invite system
-- [ ] Deploy to production
+**Short-term (Next Month):**
+- [ ] Browser extension for one-click content addition
+- [ ] Enhanced text selection and annotation
+- [ ] User reading history and saved highlights
 
 **Long-term (Future):**
-- [ ] Mobile app version
-- [ ] Browser extension for one-click content addition
-- [ ] Public content library
-- [ ] Community moderation tools
+- [ ] Mobile app version (iOS and Android)
+- [ ] Public content library with curated collections
+- [ ] Community moderation and reporting tools
+- [ ] Advanced matching algorithms based on reading patterns
 
 ---
 

@@ -209,21 +209,21 @@ This phase leverages **Supabase Realtime** instead of a custom WebSocket server.
 ***
 
 ## Phase 6: Session Management & Growth (Finishing Touches) ✨
-- [ ] **Phase 6 Complete**
+- [x] **Phase 6 Complete**
 
 ### Task 6.1: Record Chat Sessions & Implement Invites
-- [ ] **Task 6.1 Complete**
-- [ ] 1.  **Schema**: Create a `chat_sessions` table (`id`, `highlight_id`, `participants` (`uuid[]`), `transcript` (`jsonb`)).
-- [ ] 2.  **Session Recording**: As messages are sent via Supabase Realtime, have the sender also call a backend endpoint `POST /api/messages` to append the message to the `transcript` in the `chat_sessions` table. This provides a durable record.
-- [ ] 3.  **Friend Invites**: Implement the post-chat "Aha moment" modal and the `POST /api/invites` endpoint on the Bun server, saving invite codes to an `invites` table in Supabase.
+- [x] **Task 6.1 Complete**
+- [x] 1.  **Schema**: Create a `chat_sessions` table (`id`, `highlight_id`, `participants` (`uuid[]`), `transcript` (`jsonb`)).
+- [x] 2.  **Session Recording**: As messages are sent via Supabase Realtime, have the sender also call a backend endpoint `POST /api/messages` to append the message to the `transcript` in the `chat_sessions` table. This provides a durable record.
+- [x] 3.  **Friend Invites**: Implement the post-chat "Aha moment" modal and the `POST /api/invites` endpoint on the Bun server, saving invite codes to an `invites` table in Supabase.
 
 * **Unit Tests**:
-    - [ ] **Backend**: Test the endpoint for saving chat messages and the one for creating invite links.
+    - [x] **Backend**: Test the endpoint for saving chat messages and the one for creating invite links.
 * **E2E Tests (Cypress)**:
-    - [ ] **Journey (Post-Chat Invite)**: Mock the end of a chat session, assert the modal appears, click "Yes," and verify the API call to create an invite is made and a link is displayed.
+    - [x] **Journey (Post-Chat Invite)**: Mock the end of a chat session, assert the modal appears, click "Yes," and verify the API call to create an invite is made and a link is displayed.
 * **Success Criteria**:
-    - [ ] Chat transcripts are saved to the database.
-    - [ ] The invite link generation flow works and the E2E test passes.
+    - [x] Chat transcripts are saved to the database.
+    - [x] The invite link generation flow works and the E2E test passes.
 
 ***
 
