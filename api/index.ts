@@ -3,6 +3,7 @@ import { cors } from '@elysiajs/cors';
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
 import * as cheerio from 'cheerio';
+import { ImageAnnotatorClient } from '@google-cloud/vision';
 
 dotenv.config();
 
@@ -10,6 +11,11 @@ dotenv.config();
 const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const googleApiKey = process.env.GOOGLE_CLOUD_VISION_API_KEY!;
+
+// Initialize Vision client once (performance optimization)
+const visionClient = new ImageAnnotatorClient({ 
+  apiKey: googleApiKey 
+});
 
 const app = new Elysia()
   .use(cors())
@@ -170,27 +176,157 @@ const app = new Elysia()
   })
   .post('/content/upload', async ({ body, set }) => {
     const { filePath, userId } = body as { filePath: string, userId: string };
+    console.log('\n📤 UPLOAD ENDPOINT CALLED');
+    console.log('  - filePath:', filePath);
+    console.log('  - userId:', userId);
+    
     try {
       const supabase = createClient(supabaseUrl, supabaseKey);
-      const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(filePath);
+      
+      // Download image directly from storage (faster than signed URL)
+      console.log('  - Downloading image from storage...');
+      const { data: imageData, error: downloadError } = await supabase.storage
+        .from('uploads')
+        .download(filePath);
+      
+      if (downloadError || !imageData) {
+        console.error('❌ Failed to download image:', downloadError);
+        throw new Error('Failed to download image from storage');
+      }
+      
+      // Convert blob to buffer for Vision API
+      const imageBuffer = Buffer.from(await imageData.arrayBuffer());
+      console.log('  - Image size:', (imageBuffer.length / 1024).toFixed(2), 'KB');
 
-      const vision = await import('@google-cloud/vision');
-      const client = new vision.ImageAnnotatorClient({ key: googleApiKey });
-      const [result] = await client.textDetection(publicUrl);
-      const detections = result.textAnnotations;
-      const processedText = detections?.[0]?.description || '';
+      // Call Vision API with enhanced features and retry logic
+      console.log('  - Calling Google Vision API...');
+      let result: any = null;
+      let retries = 2;
+      
+      while (retries >= 0) {
+        try {
+          [result] = await visionClient.documentTextDetection({
+            image: { content: imageBuffer },
+            imageContext: {
+              languageHints: ['en'], // Add language hints for better accuracy
+            }
+          });
+          break; // Success, exit retry loop
+        } catch (visionError: any) {
+          if (retries === 0) throw visionError;
+          console.log(`  ⚠️  Vision API attempt failed, retrying... (${retries} left)`);
+          retries--;
+          await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms before retry
+        }
+      }
+      
+      if (!result) {
+        throw new Error('Failed to get response from Vision API');
+      }
+      
+      // Extract text with fallback strategies
+      let processedText = '';
+      
+      // Strategy 1: Use full document text (best for documents)
+      if (result.fullTextAnnotation?.text) {
+        processedText = result.fullTextAnnotation.text;
+        console.log('  ✓ Using fullTextAnnotation');
+      }
+      // Strategy 2: Use text annotations (fallback)
+      else if (result.textAnnotations?.[0]?.description) {
+        processedText = result.textAnnotations[0].description;
+        console.log('  ✓ Using textAnnotations');
+      }
+      
+      console.log('  - OCR extracted text length:', processedText.length);
+      console.log('  - OCR preview:', processedText.substring(0, 100));
+
+      if (!processedText || processedText.trim().length === 0) {
+        console.error('❌ No text extracted from image');
+        throw new Error('No text could be extracted from the image. The image may not contain readable text or the quality may be too low.');
+      }
+
+      // Better structure the OCR content
+      const lines = processedText.split('\n').map(line => line.trim()).filter(line => line);
+      
+      // Extract title (first substantial line or first few lines combined)
+      let title = 'Uploaded Image';
+      if (lines.length > 0 && lines[0]) {
+        // If first line is short (< 50 chars), combine with next lines
+        if (lines[0].length < 50 && lines.length > 1) {
+          title = lines.slice(0, 2).filter(Boolean).join(' ');
+        } else {
+          title = lines[0];
+        }
+        // Limit title length
+        if (title.length > 100) {
+          title = title.substring(0, 97) + '...';
+        }
+      }
+      
+      // Group lines into paragraphs (merge short consecutive lines)
+      const paragraphs: string[] = [];
+      let currentParagraph = '';
+      
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line) continue;
+        
+        // Skip if this line is part of the title
+        if (i < 2 && title.includes(line)) continue;
+        
+        if (currentParagraph) {
+          // If current line is short and doesn't end with punctuation, merge with previous
+          if (line.length < 80 && !/[.!?]$/.test(currentParagraph)) {
+            currentParagraph += ' ' + line;
+          } else {
+            // Save current paragraph and start new one
+            paragraphs.push(currentParagraph);
+            currentParagraph = line;
+          }
+        } else {
+          currentParagraph = line;
+        }
+      }
+      
+      // Add last paragraph
+      if (currentParagraph) {
+        paragraphs.push(currentParagraph);
+      }
+      
+      // Estimate reading time
+      const wordCount = processedText.split(/\s+/).length;
+      const readingTime = Math.max(1, Math.ceil(wordCount / 200));
+
+      const structuredContent = {
+        metadata: {
+          title: title,
+          category: 'OCR',
+          readingTime: `${readingTime} min read`
+        },
+        paragraphs: paragraphs.length > 0 ? paragraphs : [processedText]
+      };
 
       const { data, error } = await supabase.from('content').insert({
         user_id: userId,
         source_type: 'upload',
         source_info: filePath,
-        processed_text: processedText
+        processed_text: JSON.stringify(structuredContent)
       }).select();
 
-      if (error) throw error;
-      if (!data || data.length === 0) throw new Error('No data returned');
+      if (error) {
+        console.error('❌ Database error:', error);
+        throw error;
+      }
+      if (!data || data.length === 0) {
+        console.error('❌ No data returned from insert');
+        throw new Error('No data returned');
+      }
+      
+      console.log('✅ Upload successful, contentId:', data[0].id);
       return { success: true, contentId: data[0].id };
     } catch (err) {
+      console.error('❌ Upload error:', (err as Error).message);
       set.status = 500;
       return { error: (err as Error).message };
     }

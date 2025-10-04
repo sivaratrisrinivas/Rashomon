@@ -319,11 +319,11 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                 </div>
 
                 {/* Content */}
-                <article className="space-y-6" id="content-text">
+                <article className="space-y-5" id="content-text">
                     {content.paragraphs.map((para: string, idx: number) => {
                         if (para.startsWith('> ')) {
                             return (
-                                <blockquote key={idx} className="border-l border-border/50 pl-6 py-1 italic text-[14px] text-muted-foreground leading-[1.7]">
+                                <blockquote key={idx} className="border-l-2 border-border/50 pl-6 py-2 italic text-[14px] text-muted-foreground leading-[1.8]">
                                     {para.substring(2)}
                                 </blockquote>
                             );
@@ -335,7 +335,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                             );
                         } else {
                             return (
-                                <p key={idx} className="text-[14px] leading-[1.7] text-foreground/90">
+                                <p key={idx} className="text-[15px] leading-[1.8] text-foreground/95 tracking-wide">
                                     {para}
                                 </p>
                             );

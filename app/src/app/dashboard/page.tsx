@@ -19,7 +19,8 @@ interface ContentItem {
 const DashboardPage = () => {
     const [url, setUrl] = useState('');
     const [file, setFile] = useState<File | null>(null);
-    const [isProcessing, setIsProcessing] = useState(false);
+    const [isUrlProcessing, setIsUrlProcessing] = useState(false);
+    const [isFileProcessing, setIsFileProcessing] = useState(false);
     const [recentContent, setRecentContent] = useState<ContentItem[]>([]);
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [isImportExpanded, setIsImportExpanded] = useState(false);
@@ -45,12 +46,12 @@ const DashboardPage = () => {
         };
 
         fetchRecentContent();
-    }, [isProcessing]);
+    }, [isUrlProcessing, isFileProcessing]);
 
     const handleUrlSubmit = async () => {
         if (!url.trim()) return;
 
-        setIsProcessing(true);
+        setIsUrlProcessing(true);
         try {
             const { data: { session } } = await getSupabaseClient().auth.getSession();
             if (!session) return;
@@ -71,38 +72,55 @@ const DashboardPage = () => {
         } catch (error) {
             console.error('Error processing URL:', error);
         } finally {
-            setIsProcessing(false);
+            setIsUrlProcessing(false);
         }
     };
 
     const handleFileUpload = async () => {
         if (!file) return;
 
-        setIsProcessing(true);
+        setIsFileProcessing(true);
         try {
             const { data: { session } } = await getSupabaseClient().auth.getSession();
-            if (!session) return;
+            if (!session) {
+                console.error('No session found');
+                return;
+            }
 
+            console.log('Uploading file to storage...');
             const filePath = `${session.user.id}/${Date.now()}-${file.name}`;
             const { error: uploadError } = await getSupabaseClient().storage.from('uploads').upload(filePath, file);
 
             if (uploadError) {
-                console.error(uploadError);
+                console.error('Storage upload error:', uploadError);
+                alert('Failed to upload file: ' + uploadError.message);
                 return;
             }
 
+            console.log('File uploaded, processing OCR...');
             const response = await fetch('http://localhost:3001/content/upload', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ filePath, userId: session.user.id }),
             });
 
-            const { contentId } = await response.json();
-            if (contentId) router.push(`/reading/${contentId}`);
+            const result = await response.json();
+
+            if (!response.ok || result.error) {
+                console.error('API error:', result.error);
+                alert('Failed to process image: ' + (result.error || 'Unknown error'));
+                return;
+            }
+
+            if (result.contentId) {
+                console.log('Success! Navigating to content:', result.contentId);
+                router.push(`/reading/${result.contentId}`);
+            }
         } catch (error) {
             console.error('Error uploading file:', error);
+            alert('Failed to upload file: ' + (error as Error).message);
         } finally {
-            setIsProcessing(false);
+            setIsFileProcessing(false);
         }
     };
 
@@ -144,17 +162,17 @@ const DashboardPage = () => {
                                         value={url}
                                         onChange={(e) => setUrl(e.target.value)}
                                         placeholder="Paste article URL"
-                                        disabled={isProcessing}
+                                        disabled={isUrlProcessing}
                                         onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
                                         className="h-10 text-[13px] border-border/30"
                                     />
                                     <Button
                                         onClick={handleUrlSubmit}
-                                        disabled={!url.trim() || isProcessing}
+                                        disabled={!url.trim() || isUrlProcessing}
                                         className="h-10 px-4 text-[12px] font-normal shrink-0"
                                         variant="outline"
                                     >
-                                        {isProcessing ? 'Processing' : 'Import'}
+                                        {isUrlProcessing ? 'Processing' : 'Import'}
                                     </Button>
                                 </div>
                                 <p className="text-[10px] text-muted-foreground pl-1">
@@ -169,18 +187,18 @@ const DashboardPage = () => {
                                         <Input
                                             type="file"
                                             onChange={(e) => setFile(e.target.files?.[0] || null)}
-                                            disabled={isProcessing}
+                                            disabled={isFileProcessing}
                                             accept="image/*,.pdf"
                                             className="h-6 text-[12px] border-0 p-0 file:text-[11px]"
                                         />
                                     </div>
                                     <Button
                                         onClick={handleFileUpload}
-                                        disabled={!file || isProcessing}
+                                        disabled={!file || isFileProcessing}
                                         className="h-10 px-4 text-[12px] font-normal shrink-0"
                                         variant="outline"
                                     >
-                                        {isProcessing ? 'Processing' : 'Upload'}
+                                        {isFileProcessing ? 'Processing' : 'Upload'}
                                     </Button>
                                 </div>
                                 {file && (

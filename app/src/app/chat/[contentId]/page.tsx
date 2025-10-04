@@ -37,6 +37,8 @@ export default function ChatPage({ params }: ChatPageProps) {
     const [copied, setCopied] = useState(false);
     const [isInitiator, setIsInitiator] = useState(false);
     const [timerExpired, setTimerExpired] = useState(false);
+    const [timerStartTime, setTimerStartTime] = useState<number | null>(null);
+    const [initiatorId, setInitiatorId] = useState<string | null>(null);
 
     // Fetch content title
     useEffect(() => {
@@ -63,7 +65,6 @@ export default function ChatPage({ params }: ChatPageProps) {
     // Setup presence and chat channels
     useEffect(() => {
         const supabase = getSupabaseClient();
-        let timer: NodeJS.Timeout;
 
         const setupChannels = async () => {
             const { data: { session } } = await supabase.auth.getSession();
@@ -154,31 +155,61 @@ export default function ChatPage({ params }: ChatPageProps) {
                         });
                     }
                 })
+                .on('broadcast', { event: 'timer_sync' }, (payload) => {
+                    // Sync timer with other users
+                    const { startTime, initiatorId: broadcastInitiatorId } = payload.payload;
+                    if (startTime && !timerStartTime) {
+                        setTimerStartTime(startTime);
+                        setInitiatorId(broadcastInitiatorId);
+                        console.log('⏱️ Timer synced from broadcast:', new Date(startTime));
+                    }
+                })
                 .subscribe();
 
             setChatChannel(cChannel);
 
-            // 5-minute timer
-            timer = setInterval(() => {
-                setTimeLeft((prev) => {
-                    if (prev <= 1) {
-                        clearInterval(timer);
-                        setTimerExpired(true);
-                        return 0;
+            // Determine if this user is the initiator (first to join)
+            const presenceState = pChannel.presenceState();
+            const allUsers: string[] = [];
+            Object.values(presenceState).forEach((presences: any) => {
+                presences.forEach((presence: any) => {
+                    if (presence.userId && !allUsers.includes(presence.userId)) {
+                        allUsers.push(presence.userId);
                     }
-                    return prev - 1;
                 });
-            }, 1000);
+            });
+
+            const isFirst = allUsers.length === 0 || (allUsers.length === 1 && allUsers[0] === session.user.id);
+
+            if (isFirst) {
+                // This user is the initiator - start the timer
+                const startTime = Date.now();
+                setTimerStartTime(startTime);
+                setIsInitiator(true);
+                setInitiatorId(session.user.id);
+                console.log('🎬 Initiator joined, starting timer');
+
+                // Broadcast timer start to others
+                setTimeout(() => {
+                    cChannel.send({
+                        type: 'broadcast',
+                        event: 'timer_sync',
+                        payload: { startTime, initiatorId: session.user.id },
+                    });
+                }, 500);
+            } else {
+                // This user joined second - wait for timer sync
+                console.log('👋 Second user joined, waiting for timer sync');
+            }
         };
 
         setupChannels();
 
         return () => {
-            if (timer) clearInterval(timer);
             if (chatChannel) chatChannel.unsubscribe();
             if (presenceChannel) presenceChannel.unsubscribe();
         };
-    }, [contentId, router]);
+    }, [contentId, router, timerStartTime]);
 
     const sendMessage = async () => {
         if (!newMessage.trim() || !chatChannel) {
@@ -281,6 +312,26 @@ export default function ChatPage({ params }: ChatPageProps) {
         }
     };
 
+    // Sync timer display based on startTime
+    useEffect(() => {
+        if (!timerStartTime) return;
+
+        const updateTimer = () => {
+            const elapsed = Math.floor((Date.now() - timerStartTime) / 1000);
+            const remaining = Math.max(0, 300 - elapsed);
+            setTimeLeft(remaining);
+
+            if (remaining === 0) {
+                setTimerExpired(true);
+            }
+        };
+
+        updateTimer(); // Update immediately
+        const interval = setInterval(updateTimer, 1000);
+
+        return () => clearInterval(interval);
+    }, [timerStartTime]);
+
     // Show modal when timer expires AND user is the initiator
     useEffect(() => {
         if (timerExpired && isInitiator) {
@@ -325,11 +376,20 @@ export default function ChatPage({ params }: ChatPageProps) {
                             <div className="flex items-center justify-center h-full">
                                 <div className="text-center space-y-2">
                                     <p className="text-[12px] text-muted-foreground">
-                                        {otherUserPresent ? 'Say something to start' : 'Waiting for another reader'}
+                                        {!otherUserPresent
+                                            ? 'Waiting for another reader'
+                                            : isInitiator
+                                                ? 'Start the conversation'
+                                                : 'Waiting for the first message'}
                                     </p>
                                     {!otherUserPresent && (
                                         <p className="text-[10px] text-muted-foreground/60">
                                             You'll be notified when someone joins
+                                        </p>
+                                    )}
+                                    {otherUserPresent && !isInitiator && (
+                                        <p className="text-[10px] text-muted-foreground/60">
+                                            The initiator will send the first message
                                         </p>
                                     )}
                                 </div>
@@ -375,13 +435,19 @@ export default function ChatPage({ params }: ChatPageProps) {
                                 value={newMessage}
                                 onChange={(e) => setNewMessage(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                                placeholder={otherUserPresent ? "Type a message..." : "Waiting..."}
+                                placeholder={
+                                    !otherUserPresent
+                                        ? "Waiting for another reader..."
+                                        : messages.length === 0 && !isInitiator
+                                            ? "Waiting for first message..."
+                                            : "Type a message..."
+                                }
                                 className="flex-1 h-10 text-[13px] bg-muted/30 border-border/30"
-                                disabled={!otherUserPresent}
+                                disabled={!otherUserPresent || (messages.length === 0 && !isInitiator)}
                             />
                             <Button
                                 onClick={sendMessage}
-                                disabled={!newMessage.trim() || !otherUserPresent}
+                                disabled={!newMessage.trim() || !otherUserPresent || (messages.length === 0 && !isInitiator)}
                                 className="h-10 px-4 text-[11px] font-normal"
                                 variant="outline"
                             >
@@ -389,7 +455,7 @@ export default function ChatPage({ params }: ChatPageProps) {
                             </Button>
                         </div>
                         <p className="text-[9px] text-muted-foreground/60 mt-2 pl-1">
-                            Press Enter to send
+                            {messages.length === 0 && isInitiator ? "You can start the conversation" : "Press Enter to send"}
                         </p>
                     </div>
                 </div>
