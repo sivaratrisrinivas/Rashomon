@@ -1,3 +1,5 @@
+// FILE: app/src/app/reading/[contentId]/page.tsx
+
 'use client';
 
 import { use, useEffect, useState } from 'react';
@@ -87,16 +89,88 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
     const [presenceChannel, setPresenceChannel] = useState<RealtimeChannel | null>(null);
     const [selectedParagraphIndex, setSelectedParagraphIndex] = useState<number>(-1);
     const [checkingMatch, setCheckingMatch] = useState(false);
+    const [isClient, setIsClient] = useState(false);
+
+    // Ensure client-side rendering to prevent hydration mismatches
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    // Debug render count
+    useEffect(() => {
+        console.log('🔄 [RENDER] ClientReadingView rendered for contentId:', contentId);
+    });
 
     // Parse the structured content
     let content;
     try {
+        console.log('🧪 [CONTENT] Raw processed_text length:', processedText.length);
         content = JSON.parse(processedText);
-        // Remove duplicate paragraphs if they exist
-        if (content.paragraphs && Array.isArray(content.paragraphs)) {
-            content.paragraphs = [...new Set(content.paragraphs)];
+        console.log('📄 [CONTENT] Parsed JSON structure:', {
+            hasMetadata: !!content.metadata,
+            hasParagraphs: !!content.paragraphs,
+            paragraphCount: content.paragraphs?.length || 0,
+            title: content.metadata?.title || 'No title'
+        });
+
+        if (content.metadata) {
+            const metadataKeys = Object.keys(content.metadata);
+            const metadataLengths: Record<string, number | null> = {};
+            metadataKeys.forEach(key => {
+                const value = content.metadata[key];
+                metadataLengths[key] = typeof value === 'string' ? value.length : null;
+            });
+            console.log('🧪 [CONTENT] Metadata keys:', metadataKeys);
+            console.log('🧪 [CONTENT] Metadata lengths:', metadataLengths);
+            if (typeof content.metadata.category === 'string') {
+                const categoryPreview = content.metadata.category.trim();
+                console.log('🧪 [CONTENT] Metadata.category preview:', categoryPreview.length > 120 ? `${categoryPreview.slice(0, 120)}…` : categoryPreview);
+            }
         }
-    } catch {
+
+        if (content.metadata?.title) {
+            const titleOccurrences = processedText.split(content.metadata.title).length - 1;
+            console.log('🧪 [CONTENT] Title occurrences in processed_text:', titleOccurrences);
+        }
+
+        if (Array.isArray(content.paragraphs)) {
+            console.log('🧪 [CONTENT] Paragraph count before dedupe:', content.paragraphs.length);
+            console.log('🧪 [CONTENT] Paragraph preview (first 3):', content.paragraphs.slice(0, 3).map(p => {
+                const trimmed = p.trim();
+                return trimmed.length > 80 ? `${trimmed.slice(0, 80)}…` : trimmed;
+            }));
+        }
+
+        // Ensure we have the expected structure
+        if (!content.metadata) {
+            content.metadata = { title: 'Reading View' };
+        }
+        if (!content.paragraphs || !Array.isArray(content.paragraphs)) {
+            console.log('⚠️ [CONTENT] Invalid paragraphs structure, using fallback');
+            content.paragraphs = [processedText];
+        } else {
+            // Remove duplicate paragraphs if they exist
+            const originalCount = content.paragraphs.length;
+            content.paragraphs = [...new Set(content.paragraphs)];
+            if (originalCount !== content.paragraphs.length) {
+                console.log(`🧹 [CONTENT] Removed ${originalCount - content.paragraphs.length} duplicate paragraphs`);
+            }
+            if (content.paragraphs.length >= 2) {
+                const halfIndex = Math.floor(content.paragraphs.length / 2);
+                const firstHalf = content.paragraphs.slice(0, halfIndex).join('\n');
+                const secondHalf = content.paragraphs.slice(halfIndex).join('\n');
+                const halfSimilarity = calculateSimilarity(firstHalf, secondHalf);
+                console.log('🧪 [CONTENT] Similarity between halves:', halfSimilarity.toFixed(2));
+            }
+            if (content.metadata?.title) {
+                const titleParagraphMatches = content.paragraphs.filter(
+                    para => para.trim().toLowerCase() === content.metadata.title.trim().toLowerCase()
+                ).length;
+                console.log('🧪 [CONTENT] Paragraphs matching title:', titleParagraphMatches);
+            }
+        }
+    } catch (error) {
+        console.log('⚠️ [CONTENT] JSON parse failed, using fallback:', error);
         // Fallback for old plain text content
         content = { metadata: { title: 'Reading View' }, paragraphs: [processedText] };
     }
@@ -213,7 +287,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
         };
         document.addEventListener('mouseup', handleMouseUp);
         return () => document.removeEventListener('mouseup', handleMouseUp);
-    }, []);
+    }, [content.paragraphs, contentId, processedText, router]); // Added dependencies to useEffect
 
     // Cleanup presence channel on unmount
     useEffect(() => {
@@ -225,7 +299,15 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
     }, [presenceChannel]);
 
     const handleDiscuss = async () => {
+        console.log('💬 [DISCUSS] handleDiscuss called');
+        console.log('💬 [DISCUSS] Selection:', selection);
+        console.log('💬 [DISCUSS] Paragraph index:', selectedParagraphIndex);
+        console.log('🔍 [DISCUSS DEBUG] Current contentId:', contentId);
+        console.log('🔍 [DISCUSS DEBUG] Full URL:', window.location.href);
+        console.log('🔍 [DISCUSS DEBUG] Pathname:', window.location.pathname);
+
         if (presenceChannel) {
+            console.log('💬 [DISCUSS] Unsubscribing from existing presence channel');
             await presenceChannel.unsubscribe();
             setPresenceChannel(null);
         }
@@ -233,10 +315,20 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
         const supabase = getSupabaseClient();
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
+            console.log('❌ [DISCUSS] No session found');
             return;
         }
+        console.log('✅ [DISCUSS] User authenticated:', session.user.id);
+        console.log('🔍 [DISCUSS DEBUG] User email (for identification):', session.user.email);
 
-        // Save highlight (from Phase 4)
+        // Save highlight
+        console.log('💬 [DISCUSS] Saving highlight...');
+        console.log('🔍 [DISCUSS DEBUG] Highlight request body:', JSON.stringify({
+            contentId,
+            text: selection,
+            context: processedText.substring(0, 100),
+            userId: session.user.id
+        }, null, 2));
         const response = await fetch('http://localhost:3001/highlights', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -248,45 +340,57 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
             }),
         });
 
+        console.log('💬 [DISCUSS] Highlight save response status:', response.status);
         if (!response.ok) {
+            console.log('❌ [DISCUSS] Failed to save highlight');
             setSelection('');
             return;
         }
 
-        const { highlightId } = await response.json();
+        const highlightData = await response.json();
+        console.log('💬 [DISCUSS] Highlight saved:', highlightData);
+        console.log('🔍 [DISCUSS DEBUG] Highlight ID returned:', highlightData.highlightId);
 
         // Join Presence channel for matching
         const channelName = `content:${contentId}`;
+        console.log('💬 [DISCUSS] Joining presence channel:', channelName);
+        console.log('🔍 [DISCUSS DEBUG] If two users have same contentId, they should see each other in:', channelName);
         const channel = supabase.channel(channelName);
 
         channel
             .on('presence', { event: 'sync' }, () => {
-                // Presence synced
-            })
-            .on('presence', { event: 'join' }, () => {
-                // User joined
-            })
-            .on('presence', { event: 'leave' }, () => {
-                // User left
+                console.log('💬 [DISCUSS] Presence sync');
             })
             .subscribe(async (status) => {
+                console.log('💬 [DISCUSS] Channel subscription status:', status);
                 if (status === 'SUBSCRIBED') {
-                    await channel.track({
+                    const trackData = {
                         userId: session.user.id,
-                        highlightId,
                         selectedText: selection,
                         paragraphIndex: selectedParagraphIndex,
                         timestamp: new Date().toISOString()
-                    });
+                    };
+                    console.log('💬 [DISCUSS] Tracking presence with:', trackData);
+                    await channel.track(trackData);
                 }
             });
 
         setPresenceChannel(channel);
         setSelection('');
 
-        // Navigate to chat immediately - matching will happen there
+        // Navigate to chat immediately
+        console.log('💬 [DISCUSS] Navigating to chat:', `/chat/${contentId}`);
         router.push(`/chat/${contentId}`);
     };
+
+    // Don't render until client-side to prevent hydration mismatches
+    if (!isClient) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <p className="text-[12px] text-muted-foreground">Loading</p>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen">
