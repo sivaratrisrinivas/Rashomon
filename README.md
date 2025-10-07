@@ -40,7 +40,7 @@ It's designed for those "aha!" moments when you want to share a reaction immedia
 
 4. **Read**: View your content in a clean, distraction-free reading interface.
 
-5. **Discuss**: Click "Chat" on any reading page to instantly connect with other readers of that content. Discuss the entire piece or highlight specific passages to find readers focused on the same section.
+5. **Discuss**: Highlight any text passage to reveal the "Discuss this" button, which instantly connects you with other readers focused on the same section.
 
 6. **Connect**: After a meaningful 5-minute conversation, you'll be prompted to generate an invite link. Share Rashomon with friends who'd appreciate spontaneous discussions around shared reading.
 
@@ -241,7 +241,7 @@ When you paste a web address, we fetch that page's HTML, parse it, and extract j
 Upload a screenshot, photo of a page, or PDF, and Google's Vision API reads the text like a human would. It's surprisingly accurate, even with handwriting or unusual fonts.
 
 ### Real-Time Matching
-Using Supabase's real-time features, we detect when multiple people are reading the same content simultaneously. When you're reading, you can instantly connect with other readers through a content-level chat, or highlight specific text to find readers focused on the same passage.
+Using Supabase's real-time features, we detect when multiple people are reading the same content simultaneously. When you highlight specific text, you can instantly connect with other readers focused on the same passage for a focused discussion.
 
 ### Ephemeral Chats
 Conversations last 5 minutes by default – long enough to exchange ideas but short enough to stay focused. This prevents endless threads and encourages meaningful, in-the-moment discussion. After a great chat, you can generate an invite link to share Rashomon with others.
