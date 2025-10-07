@@ -455,19 +455,6 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                 </article>
             </div>
 
-            {/* Floating Chat Button - Liquid morphing orb */}
-            <div className="fixed bottom-10 right-10 z-20">
-                <Button
-                    onClick={() => router.push(`/chat/${contentId}`)}
-                    className="h-14 w-14 rounded-full p-0 glass shadow-lg hover:shadow-2xl hover:shadow-violet-500/20 transition-all duration-500 hover:scale-110 border-border/50 float"
-                    title="Start discussion"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    </svg>
-                </Button>
-            </div>
-
             {/* Selection popover - Glass morphism */}
             {selection && (
                 <Popover open={!!selection}>
