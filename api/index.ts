@@ -661,36 +661,6 @@ const app = new Elysia()
       return { error: err.message };
     }
   })
-  .post('/invites', async ({ body, set }) => {
-    const { sessionId } = body as { sessionId: string };
-    
-    console.log('\n📨 INVITES ENDPOINT CALLED');
-    console.log('  - sessionId:', sessionId);
-    
-    if (!sessionId) {
-      set.status = 400;
-      return { error: 'Session ID required' };
-    }
-
-    const inviteCode = crypto.randomUUID();
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    
-    console.log('  - Generated invite code:', inviteCode);
-    
-    const { error } = await supabase.from('invites').insert({ 
-      code: inviteCode, 
-      session_id: sessionId 
-    });
-
-    if (error) {
-      console.error('❌ Error creating invite:', error.message);
-      set.status = 500;
-      return { error: error.message };
-    }
-    
-    console.log('✅ Invite created successfully');
-    return { link: `https://your-app.com/invite/${inviteCode}` };
-  })
   .listen(3001);
 
 console.log(`Server running at ${app.server?.hostname}:${app.server?.port}`);

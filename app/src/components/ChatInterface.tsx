@@ -18,8 +18,6 @@ const ChatInterface = ({ roomName }: { roomName: string }) => {
     const [message, setMessage] = useState('');
     const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
     const [showModal, setShowModal] = useState(false);
-    const [inviteLink, setInviteLink] = useState<string | null>(null);
-    const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
 
     useEffect(() => {
         const supabase = getSupabaseClient();
@@ -73,33 +71,6 @@ const ChatInterface = ({ roomName }: { roomName: string }) => {
         setMessage('');
     };
 
-    const generateInvite = async () => {
-        setIsGeneratingInvite(true);
-        try {
-            const sessionId = roomName.split(':')[1];
-
-            const response = await fetch('http://localhost:3001/invites', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId }),
-            });
-
-            const result = await response.json();
-            if (result.link) {
-                setInviteLink(result.link);
-            }
-        } catch (error) {
-            console.error('Failed to generate invite:', error);
-        } finally {
-            setIsGeneratingInvite(false);
-        }
-    };
-
-    const copyInviteLink = () => {
-        if (inviteLink) {
-            navigator.clipboard.writeText(inviteLink);
-        }
-    };
 
     return (
         <>
@@ -144,44 +115,19 @@ const ChatInterface = ({ roomName }: { roomName: string }) => {
             <Dialog open={showModal} onOpenChange={setShowModal}>
                 <DialogContent className="glass border-border/50 shadow-2xl shadow-violet-500/10">
                     <DialogHeader>
-                        <DialogTitle className="text-[18px] font-light tracking-tight">Share Rashomon</DialogTitle>
+                        <DialogTitle className="text-[18px] font-light tracking-tight">Session Complete</DialogTitle>
                         <DialogDescription className="text-[13px] text-muted-foreground/80 leading-relaxed font-light">
-                            Invite someone to experience this platform
+                            Your discussion session has ended. Thanks for participating!
                         </DialogDescription>
                     </DialogHeader>
-
-                    {inviteLink ? (
-                        <div className="space-y-4">
-                            <div className="p-4 glass border border-border/30">
-                                <p className="text-[11px] font-mono font-light break-all">{inviteLink}</p>
-                            </div>
-                            <Button
-                                onClick={copyInviteLink}
-                                variant="outline"
-                                className="w-full h-11 text-[12px] font-light tracking-wide glass hover:scale-[1.02] transition-all duration-300 border-border/50"
-                            >
-                                Copy
-                            </Button>
-                        </div>
-                    ) : (
-                        <DialogFooter className="flex-col sm:flex-row gap-3">
-                            <Button
-                                variant="ghost"
-                                onClick={() => setShowModal(false)}
-                                className="h-11 text-[12px] font-light tracking-wide hover:scale-105 transition-all duration-300"
-                            >
-                                Not now
-                            </Button>
-                            <Button
-                                onClick={generateInvite}
-                                disabled={isGeneratingInvite}
-                                variant="outline"
-                                className="h-11 text-[12px] font-light tracking-wide glass hover:scale-105 transition-all duration-300 border-border/50"
-                            >
-                                {isGeneratingInvite ? 'Generating' : 'Generate invite'}
-                            </Button>
-                        </DialogFooter>
-                    )}
+                    <DialogFooter>
+                        <Button
+                            onClick={() => setShowModal(false)}
+                            className="h-11 text-[12px] font-light tracking-wide glass hover:scale-105 transition-all duration-300 border-border/50"
+                        >
+                            Close
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </>
