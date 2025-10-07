@@ -36,14 +36,14 @@ const OnboardingPage = () => {
 
     return (
         <Dialog open={true}>
-            <DialogContent className="border-border/50">
+            <DialogContent className="glass border-border/50 shadow-2xl shadow-violet-500/10">
                 <DialogHeader>
-                    <DialogTitle className="text-[14px] font-medium">Reading Preferences</DialogTitle>
+                    <DialogTitle className="text-[20px] font-light tracking-tight">Reading Preferences</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-6">
-                    <div className="space-y-3">
+                <div className="space-y-8">
+                    <div className="space-y-4">
                         {preferencesOptions.map((option) => (
-                            <div key={option} className="flex items-center space-x-3">
+                            <div key={option} className="flex items-center space-x-4 group">
                                 <Checkbox
                                     id={option}
                                     checked={selectedPreferences.includes(option)}
@@ -54,11 +54,11 @@ const OnboardingPage = () => {
                                             setSelectedPreferences(selectedPreferences.filter((p) => p !== option));
                                         }
                                     }}
-                                    className="data-[state=checked]:bg-foreground data-[state=checked]:border-foreground"
+                                    className="data-[state=checked]:bg-foreground data-[state=checked]:border-foreground transition-all duration-300 hover:scale-110"
                                 />
                                 <Label
                                     htmlFor={option}
-                                    className="text-[13px] font-normal cursor-pointer"
+                                    className="text-[14px] font-light cursor-pointer group-hover:text-foreground transition-colors duration-300"
                                 >
                                     {option.charAt(0).toUpperCase() + option.slice(1)}
                                 </Label>
@@ -68,7 +68,7 @@ const OnboardingPage = () => {
                     <Button
                         onClick={handleSubmit}
                         variant="outline"
-                        className="w-full h-9 text-[12px] font-normal"
+                        className="w-full h-11 text-[13px] font-light tracking-wide glass hover:scale-[1.02] transition-all duration-300 hover:shadow-md hover:shadow-violet-500/10 border-border/50"
                     >
                         Continue
                     </Button>

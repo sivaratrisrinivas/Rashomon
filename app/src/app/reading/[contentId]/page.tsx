@@ -102,10 +102,14 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
     });
 
     // Parse the structured content
-    let content;
+    interface ContentStructure {
+        metadata: { title: string; category?: string; readingTime?: string };
+        paragraphs: string[];
+    }
+    let content: ContentStructure;
     try {
         console.log('🧪 [CONTENT] Raw processed_text length:', processedText.length);
-        content = JSON.parse(processedText);
+        content = JSON.parse(processedText) as ContentStructure;
         console.log('📄 [CONTENT] Parsed JSON structure:', {
             hasMetadata: !!content.metadata,
             hasParagraphs: !!content.paragraphs,
@@ -117,7 +121,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
             const metadataKeys = Object.keys(content.metadata);
             const metadataLengths: Record<string, number | null> = {};
             metadataKeys.forEach(key => {
-                const value = content.metadata[key];
+                const value = (content.metadata as Record<string, unknown>)[key];
                 metadataLengths[key] = typeof value === 'string' ? value.length : null;
             });
             console.log('🧪 [CONTENT] Metadata keys:', metadataKeys);
@@ -135,7 +139,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
 
         if (Array.isArray(content.paragraphs)) {
             console.log('🧪 [CONTENT] Paragraph count before dedupe:', content.paragraphs.length);
-            console.log('🧪 [CONTENT] Paragraph preview (first 3):', content.paragraphs.slice(0, 3).map(p => {
+            console.log('🧪 [CONTENT] Paragraph preview (first 3):', content.paragraphs.slice(0, 3).map((p: string) => {
                 const trimmed = p.trim();
                 return trimmed.length > 80 ? `${trimmed.slice(0, 80)}…` : trimmed;
             }));
@@ -164,7 +168,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
             }
             if (content.metadata?.title) {
                 const titleParagraphMatches = content.paragraphs.filter(
-                    para => para.trim().toLowerCase() === content.metadata.title.trim().toLowerCase()
+                    (para: string) => para.trim().toLowerCase() === content.metadata.title.trim().toLowerCase()
                 ).length;
                 console.log('🧪 [CONTENT] Paragraphs matching title:', titleParagraphMatches);
             }
@@ -393,53 +397,56 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
     }
 
     return (
-        <div className="min-h-screen">
+        <div className="min-h-screen relative">
+            {/* Ambient reading gradient */}
+            <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full bg-gradient-to-br from-violet-300/8 via-transparent to-cyan-300/8 blur-3xl pointer-events-none gradient-shift" />
+
             {/* Header - Sticky with back navigation */}
-            <header className="border-b border-border/30 sticky top-0 bg-background/95 backdrop-blur-sm z-10">
-                <div className="max-w-2xl mx-auto px-8 py-5">
+            <header className="border-b border-border/50 sticky top-0 glass z-10">
+                <div className="max-w-3xl mx-auto px-8 py-6">
                     <Link
                         href="/dashboard"
-                        className="text-[11px] text-muted-foreground hover:text-foreground transition-colors inline-block"
+                        className="text-[11px] text-muted-foreground hover:text-foreground transition-all duration-300 inline-block font-light tracking-wide"
                     >
                         ← Library
                     </Link>
                 </div>
             </header>
 
-            <div className="max-w-2xl mx-auto px-8 py-16">
+            <div className="max-w-3xl mx-auto px-8 py-20 relative z-10">
                 {/* Header */}
-                <div className="mb-16 pb-12 border-b border-border/30">
+                <div className="mb-20 pb-16 border-b border-border/20">
                     {content.metadata.category && (
-                        <div className="text-[11px] text-muted-foreground mb-3 tracking-wide uppercase">
+                        <div className="text-[10px] text-muted-foreground/70 mb-4 tracking-widest uppercase font-light">
                             {content.metadata.category}
                             {content.metadata.readingTime && (
-                                <span className="ml-3">· {content.metadata.readingTime}</span>
+                                <span className="ml-4">· {content.metadata.readingTime}</span>
                             )}
                         </div>
                     )}
-                    <h1 className="text-[28px] font-normal leading-[1.3] tracking-tight">
+                    <h1 className="text-[36px] font-light leading-[1.25] tracking-[-0.02em] text-foreground/95">
                         {content.metadata.title}
                     </h1>
                 </div>
 
                 {/* Content */}
-                <article className="space-y-5" id="content-text">
+                <article className="space-y-7" id="content-text">
                     {content.paragraphs.map((para: string, idx: number) => {
                         if (para.startsWith('> ')) {
                             return (
-                                <blockquote key={idx} className="border-l-2 border-border/50 pl-6 py-2 italic text-[14px] text-muted-foreground leading-[1.8]">
+                                <blockquote key={idx} className="border-l-2 border-violet-500/30 pl-8 py-3 italic text-[15px] text-muted-foreground/90 leading-[1.9] font-light">
                                     {para.substring(2)}
                                 </blockquote>
                             );
                         } else if (para.startsWith('## ')) {
                             return (
-                                <h2 key={idx} className="text-[18px] font-medium mt-12 mb-4 tracking-tight">
+                                <h2 key={idx} className="text-[22px] font-light mt-16 mb-6 tracking-tight text-foreground/90">
                                     {para.substring(3)}
                                 </h2>
                             );
                         } else {
                             return (
-                                <p key={idx} className="text-[15px] leading-[1.8] text-foreground/95 tracking-wide">
+                                <p key={idx} className="text-[16px] leading-[1.9] text-foreground/90 tracking-normal font-light">
                                     {para}
                                 </p>
                             );
@@ -448,31 +455,31 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                 </article>
             </div>
 
-            {/* Floating Chat Button - Always visible */}
-            <div className="fixed bottom-8 right-8 z-20">
+            {/* Floating Chat Button - Liquid morphing orb */}
+            <div className="fixed bottom-10 right-10 z-20">
                 <Button
                     onClick={() => router.push(`/chat/${contentId}`)}
-                    className="h-12 w-12 rounded-full p-0 shadow-lg hover:shadow-xl transition-shadow"
+                    className="h-14 w-14 rounded-full p-0 glass shadow-lg hover:shadow-2xl hover:shadow-violet-500/20 transition-all duration-500 hover:scale-110 border-border/50 float"
                     title="Start discussion"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                     </svg>
                 </Button>
             </div>
 
-            {/* Selection popover - Redesigned */}
+            {/* Selection popover - Glass morphism */}
             {selection && (
                 <Popover open={!!selection}>
                     <PopoverTrigger asChild>
                         <div style={{ position: 'absolute', top: position.y, left: position.x }} />
                     </PopoverTrigger>
-                    <PopoverContent className="border-border/50 shadow-sm p-1 w-auto">
+                    <PopoverContent className="glass shadow-lg shadow-violet-500/10 p-1.5 w-auto border-border/50">
                         <Button
                             onClick={handleDiscuss}
                             variant="ghost"
                             size="sm"
-                            className="h-8 px-3 text-[11px] font-normal"
+                            className="h-9 px-4 text-[11px] font-light tracking-wide hover:scale-105 transition-all duration-300"
                         >
                             Discuss this
                         </Button>
@@ -480,9 +487,9 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                 </Popover>
             )}
 
-            {/* Checking for match indicator - Improved */}
+            {/* Checking for match indicator - Floating pill */}
             {checkingMatch && (
-                <div className="fixed bottom-24 right-8 bg-foreground text-background px-3 py-1.5 text-[10px] font-medium">
+                <div className="fixed bottom-28 right-10 glass px-4 py-2 text-[11px] font-light tracking-wide shadow-md shadow-violet-500/10 border border-border/50">
                     Matching...
                 </div>
             )}

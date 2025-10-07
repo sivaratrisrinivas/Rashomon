@@ -375,41 +375,44 @@ export default function ChatPage({ params }: ChatPageProps) {
 
     // --- The rest of your JSX remains the same ---
     return (
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col relative">
+            {/* Ambient gradient for chat */}
+            <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-gradient-to-br from-violet-300/10 to-cyan-300/10 blur-3xl pointer-events-none gradient-shift" />
+
             {/* Header */}
-            <header className="border-b border-border/30 sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
-                <div className="max-w-4xl mx-auto px-8 py-5 flex justify-between items-center">
-                    <div className="flex items-center gap-6">
+            <header className="border-b border-border/50 sticky top-0 z-10 glass">
+                <div className="max-w-4xl mx-auto px-8 py-6 flex justify-between items-center">
+                    <div className="flex items-center gap-8">
                         <Link
                             href={`/reading/${contentId}`}
-                            className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                            className="text-[11px] text-muted-foreground hover:text-foreground transition-all duration-300 font-light tracking-wide"
                         >
                             ← Read
                         </Link>
-                        <div className="border-l border-border/30 pl-6">
-                            <h1 className="text-[13px] font-medium truncate max-w-md">{contentTitle}</h1>
-                            <div className="flex items-center gap-2 mt-0.5">
-                                <div className={`w-1.5 h-1.5 rounded-full ${otherUserPresent ? 'bg-green-500' : 'bg-muted-foreground'}`} />
-                                <p className="text-[10px] text-muted-foreground">
+                        <div className="border-l border-border/40 pl-8">
+                            <h1 className="text-[14px] font-light truncate max-w-md tracking-wide">{contentTitle}</h1>
+                            <div className="flex items-center gap-2.5 mt-1">
+                                <div className={`w-2 h-2 rounded-full transition-all duration-500 ${otherUserPresent ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-muted-foreground/50'}`} />
+                                <p className="text-[10px] text-muted-foreground/70 font-light tracking-wide">
                                     {otherUserPresent ? 'Connected' : 'Waiting for reader'}
                                 </p>
                             </div>
                         </div>
                     </div>
-                    <div className="text-[10px] text-muted-foreground font-mono tabular-nums">
+                    <div className="text-[11px] text-muted-foreground/70 font-mono font-light tabular-nums">
                         {formatTime(timeLeft)}
                     </div>
                 </div>
             </header>
 
             {/* Chat Interface */}
-            <main className="max-w-4xl w-full mx-auto px-8 flex-1 flex flex-col py-6">
+            <main className="max-w-4xl w-full mx-auto px-8 flex-1 flex flex-col py-8 relative z-10">
                 <div className="flex-1 flex flex-col w-full">
                     {/* Messages Area */}
-                    <div className="flex-1 overflow-y-auto px-2 py-6 space-y-5">
+                    <div className="flex-1 overflow-y-auto px-3 py-8 space-y-6">
                         {messages.length === 0 ? (
                             <div className="flex items-center justify-center h-full">
-                                <p className="text-[12px] text-muted-foreground">
+                                <p className="text-[13px] text-muted-foreground/70 font-light">
                                     {otherUserPresent ? 'Start the conversation...' : 'Waiting for another reader...'}
                                 </p>
                             </div>
@@ -419,21 +422,21 @@ export default function ChatPage({ params }: ChatPageProps) {
                                 return (
                                     <div
                                         key={msg.id}
-                                        className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+                                        className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
                                     >
                                         <div
-                                            className={`max-w-[70%] space-y-1.5 ${isOwnMessage ? 'items-end' : 'items-start'} flex flex-col`}
+                                            className={`max-w-[75%] space-y-2 ${isOwnMessage ? 'items-end' : 'items-start'} flex flex-col`}
                                         >
-                                            <p className="text-[10px] text-muted-foreground">
+                                            <p className="text-[10px] text-muted-foreground/60 font-light tracking-wide">
                                                 {isOwnMessage ? 'You' : 'Reader'}
                                             </p>
                                             <div
-                                                className={`px-4 py-2.5 rounded-lg ${isOwnMessage
-                                                    ? 'bg-foreground text-background'
-                                                    : 'bg-muted text-foreground border border-border/30'
+                                                className={`px-5 py-3.5 transition-all duration-300 ${isOwnMessage
+                                                    ? 'bg-foreground text-background rounded-2xl rounded-tr-md hover:scale-[1.01]'
+                                                    : 'glass border border-border/40 rounded-2xl rounded-tl-md hover:scale-[1.01] hover:shadow-md hover:shadow-violet-500/10'
                                                     }`}
                                             >
-                                                <p className="text-[13px] leading-[1.6]">{msg.text}</p>
+                                                <p className="text-[14px] leading-[1.7] font-light">{msg.text}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -443,20 +446,20 @@ export default function ChatPage({ params }: ChatPageProps) {
                     </div>
 
                     {/* Input Area */}
-                    <div className="border-t border-border/30 pt-4 pb-2">
-                        <div className="flex items-end gap-2">
+                    <div className="border-t border-border/40 pt-5 pb-3">
+                        <div className="flex items-end gap-3">
                             <Input
                                 value={newMessage}
                                 onChange={(e) => setNewMessage(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                                 placeholder={!otherUserPresent || timerExpired ? "Waiting for another reader..." : "Type a message..."}
-                                className="flex-1 h-10 text-[13px] bg-muted/30 border-border/30"
+                                className="flex-1 h-12 text-[13px] glass border-border/40 font-light placeholder:text-muted-foreground/40 focus:border-violet-500/30 transition-all duration-300"
                                 disabled={!otherUserPresent || timerExpired}
                             />
                             <Button
                                 onClick={sendMessage}
                                 disabled={!newMessage.trim() || !otherUserPresent || timerExpired}
-                                className="h-10 px-4 text-[11px] font-normal"
+                                className="h-12 px-6 text-[12px] font-light tracking-wide glass hover:scale-105 transition-all duration-300 hover:shadow-md hover:shadow-violet-500/10 border-border/50"
                                 variant="outline"
                             >
                                 Send

@@ -103,72 +103,72 @@ const ChatInterface = ({ roomName }: { roomName: string }) => {
 
     return (
         <>
-            <div className="border border-border/30 mt-8">
-                <div className="border-b border-border/30 px-4 py-3 flex items-center justify-between">
-                    <h2 className="text-[12px] font-medium">Discussion</h2>
-                    <span className="text-[11px] text-muted-foreground font-mono">
+            <div className="glass mt-12 border border-border/50 overflow-hidden">
+                <div className="border-b border-border/30 px-6 py-4 flex items-center justify-between glass">
+                    <h2 className="text-[13px] font-light tracking-wide">Discussion</h2>
+                    <span className="text-[11px] text-muted-foreground/70 font-mono font-light">
                         {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
                     </span>
                 </div>
-                <div className="p-4 space-y-3 min-h-[200px]">
+                <div className="p-6 space-y-4 min-h-[280px] max-h-[400px] overflow-y-auto">
                     {messages.map((msg, idx) => (
-                        <div key={idx} className="text-[13px] p-2 bg-muted">
+                        <div key={idx} className="text-[14px] p-4 glass border border-border/30 font-light leading-relaxed hover:scale-[1.01] transition-all duration-300">
                             {msg}
                         </div>
                     ))}
                 </div>
                 {timeLeft > 0 ? (
-                    <div className="border-t border-border/30 p-3 flex gap-2">
+                    <div className="border-t border-border/30 p-4 flex gap-3 glass">
                         <Input
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                             placeholder="Message"
-                            className="h-9 text-[13px] border-0 bg-transparent focus-visible:ring-0"
+                            className="h-11 text-[13px] border-0 bg-transparent focus-visible:ring-0 font-light placeholder:text-muted-foreground/40"
                         />
                         <Button
                             onClick={sendMessage}
                             variant="ghost"
-                            className="h-9 px-3 text-[12px] font-normal"
+                            className="h-11 px-5 text-[12px] font-light tracking-wide hover:scale-105 transition-all duration-300 glass border border-border/30"
                         >
                             Send
                         </Button>
                     </div>
                 ) : (
-                    <div className="text-center py-6 text-[12px] text-muted-foreground">
+                    <div className="text-center py-8 text-[13px] text-muted-foreground/70 font-light">
                         Session ended
                     </div>
                 )}
             </div>
 
             <Dialog open={showModal} onOpenChange={setShowModal}>
-                <DialogContent className="border-border/50">
+                <DialogContent className="glass border-border/50 shadow-2xl shadow-violet-500/10">
                     <DialogHeader>
-                        <DialogTitle className="text-[14px] font-medium">Share Rashomon</DialogTitle>
-                        <DialogDescription className="text-[12px] text-muted-foreground leading-relaxed">
+                        <DialogTitle className="text-[18px] font-light tracking-tight">Share Rashomon</DialogTitle>
+                        <DialogDescription className="text-[13px] text-muted-foreground/80 leading-relaxed font-light">
                             Invite someone to experience this platform
                         </DialogDescription>
                     </DialogHeader>
 
                     {inviteLink ? (
-                        <div className="space-y-3">
-                            <div className="p-3 bg-muted">
-                                <p className="text-[11px] font-mono break-all">{inviteLink}</p>
+                        <div className="space-y-4">
+                            <div className="p-4 glass border border-border/30">
+                                <p className="text-[11px] font-mono font-light break-all">{inviteLink}</p>
                             </div>
                             <Button
                                 onClick={copyInviteLink}
                                 variant="outline"
-                                className="w-full h-9 text-[12px] font-normal"
+                                className="w-full h-11 text-[12px] font-light tracking-wide glass hover:scale-[1.02] transition-all duration-300 border-border/50"
                             >
                                 Copy
                             </Button>
                         </div>
                     ) : (
-                        <DialogFooter className="flex-col sm:flex-row gap-2">
+                        <DialogFooter className="flex-col sm:flex-row gap-3">
                             <Button
                                 variant="ghost"
                                 onClick={() => setShowModal(false)}
-                                className="h-9 text-[12px] font-normal"
+                                className="h-11 text-[12px] font-light tracking-wide hover:scale-105 transition-all duration-300"
                             >
                                 Not now
                             </Button>
@@ -176,7 +176,7 @@ const ChatInterface = ({ roomName }: { roomName: string }) => {
                                 onClick={generateInvite}
                                 disabled={isGeneratingInvite}
                                 variant="outline"
-                                className="h-9 text-[12px] font-normal"
+                                className="h-11 text-[12px] font-light tracking-wide glass hover:scale-105 transition-all duration-300 border-border/50"
                             >
                                 {isGeneratingInvite ? 'Generating' : 'Generate invite'}
                             </Button>

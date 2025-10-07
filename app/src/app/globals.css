@@ -44,72 +44,72 @@
 }
 
 :root {
-  --radius: 0.125rem;
-  --background: oklch(0.99 0 0);
-  --foreground: oklch(0.15 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.15 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0 0);
-  --primary: oklch(0.15 0 0);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.96 0 0);
-  --secondary-foreground: oklch(0.15 0 0);
-  --muted: oklch(0.96 0 0);
-  --muted-foreground: oklch(0.50 0 0);
-  --accent: oklch(0.96 0 0);
-  --accent-foreground: oklch(0.15 0 0);
+  --radius: 0.75rem;
+  --background: oklch(0.99 0.005 220);
+  --foreground: oklch(0.15 0.02 230);
+  --card: oklch(0.98 0.01 210 / 0.5);
+  --card-foreground: oklch(0.15 0.02 230);
+  --popover: oklch(0.99 0.01 210 / 0.95);
+  --popover-foreground: oklch(0.15 0.02 230);
+  --primary: oklch(0.55 0.15 240);
+  --primary-foreground: oklch(0.99 0.005 220);
+  --secondary: oklch(0.94 0.02 200);
+  --secondary-foreground: oklch(0.15 0.02 230);
+  --muted: oklch(0.96 0.01 220);
+  --muted-foreground: oklch(0.50 0.03 225);
+  --accent: oklch(0.75 0.12 200);
+  --accent-foreground: oklch(0.99 0.005 220);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.90 0 0);
-  --input: oklch(0.96 0 0);
-  --ring: oklch(0.15 0 0 / 20%);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.99 0 0);
-  --sidebar-foreground: oklch(0.15 0 0);
-  --sidebar-primary: oklch(0.15 0 0);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.96 0 0);
-  --sidebar-accent-foreground: oklch(0.15 0 0);
-  --sidebar-border: oklch(0.90 0 0);
-  --sidebar-ring: oklch(0.15 0 0 / 20%);
+  --border: oklch(0.88 0.015 210 / 0.2);
+  --input: oklch(0.94 0.02 210 / 0.6);
+  --ring: oklch(0.55 0.15 240 / 0.15);
+  --chart-1: oklch(0.60 0.18 240);
+  --chart-2: oklch(0.65 0.14 200);
+  --chart-3: oklch(0.70 0.12 180);
+  --chart-4: oklch(0.58 0.16 260);
+  --chart-5: oklch(0.75 0.10 220);
+  --sidebar: oklch(0.98 0.008 220);
+  --sidebar-foreground: oklch(0.20 0.025 230);
+  --sidebar-primary: oklch(0.55 0.15 240);
+  --sidebar-primary-foreground: oklch(0.99 0.005 220);
+  --sidebar-accent: oklch(0.92 0.025 210);
+  --sidebar-accent-foreground: oklch(0.20 0.025 230);
+  --sidebar-border: oklch(0.88 0.015 210 / 0.2);
+  --sidebar-ring: oklch(0.55 0.15 240 / 0.15);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: oklch(0.12 0.02 230);
+  --foreground: oklch(0.95 0.01 210);
+  --card: oklch(0.18 0.03 230 / 0.5);
+  --card-foreground: oklch(0.95 0.01 210);
+  --popover: oklch(0.18 0.03 230 / 0.95);
+  --popover-foreground: oklch(0.95 0.01 210);
+  --primary: oklch(0.65 0.18 220);
+  --primary-foreground: oklch(0.12 0.02 230);
+  --secondary: oklch(0.25 0.04 235);
+  --secondary-foreground: oklch(0.95 0.01 210);
+  --muted: oklch(0.22 0.03 230);
+  --muted-foreground: oklch(0.68 0.04 220);
+  --accent: oklch(0.60 0.16 200);
+  --accent-foreground: oklch(0.95 0.01 210);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --border: oklch(0.35 0.05 230 / 0.3);
+  --input: oklch(0.30 0.04 230 / 0.4);
+  --ring: oklch(0.65 0.18 220 / 0.4);
+  --chart-1: oklch(0.65 0.20 240);
+  --chart-2: oklch(0.70 0.16 200);
+  --chart-3: oklch(0.75 0.12 180);
+  --chart-4: oklch(0.60 0.18 260);
+  --chart-5: oklch(0.68 0.14 220);
+  --sidebar: oklch(0.16 0.025 230);
+  --sidebar-foreground: oklch(0.92 0.012 210);
+  --sidebar-primary: oklch(0.65 0.18 220);
+  --sidebar-primary-foreground: oklch(0.12 0.02 230);
+  --sidebar-accent: oklch(0.28 0.045 225);
+  --sidebar-accent-foreground: oklch(0.92 0.012 210);
+  --sidebar-border: oklch(0.35 0.05 230 / 0.3);
+  --sidebar-ring: oklch(0.65 0.18 220 / 0.4);
 }
 
 @layer base {
@@ -119,19 +119,151 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+    position: relative;
+    overflow-x: hidden;
   }
 
-  /* Subtle transitions for refinement */
+  /* Morphing background gradient */
+  body::before {
+    content: "";
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 20% 50%,
+        oklch(0.85 0.08 220 / 0.15) 0%,
+        transparent 50%),
+      radial-gradient(circle at 80% 80%,
+        oklch(0.80 0.10 200 / 0.12) 0%,
+        transparent 50%),
+      radial-gradient(circle at 40% 20%,
+        oklch(0.88 0.06 240 / 0.1) 0%,
+        transparent 50%);
+    animation: morphBackground 20s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Liquid, organic animations */
   button,
   a,
   input,
   textarea,
   select {
-    @apply transition-all duration-150 ease-out;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Enhanced focus states for accessibility */
+  /* Enhanced focus with iridescent glow */
   *:focus-visible {
-    @apply outline-2 outline-offset-2 outline-primary/30;
+    @apply outline-2 outline-offset-2;
+    outline-color: oklch(0.65 0.15 220 / 0.5);
+    box-shadow: 0 0 0 3px oklch(0.80 0.10 220 / 0.2),
+      0 0 20px oklch(0.70 0.12 220 / 0.15);
   }
+
+  /* Breathing effect for interactive elements */
+  button:hover,
+  a:hover {
+    animation: breathe 2s ease-in-out infinite;
+  }
+}
+
+@keyframes morphBackground {
+
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+
+  33% {
+    transform: translate(5%, -5%) rotate(120deg) scale(1.05);
+  }
+
+  66% {
+    transform: translate(-3%, 3%) rotate(240deg) scale(0.98);
+  }
+}
+
+@keyframes breathe {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-10px) rotate(2deg);
+  }
+}
+
+@keyframes gradientShift {
+
+  0%,
+  100% {
+    filter: hue-rotate(0deg);
+  }
+
+  50% {
+    filter: hue-rotate(15deg);
+  }
+}
+
+/* Glass morphism utility classes */
+.glass {
+  background: oklch(0.98 0.015 220 / 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid oklch(0.88 0.02 210 / 0.25);
+}
+
+.glass-dark {
+  background: oklch(0.18 0.03 230 / 0.6);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid oklch(0.35 0.05 230 / 0.15);
+}
+
+/* Iridescent text effect */
+.iridescent {
+  background: linear-gradient(90deg,
+      oklch(0.50 0.12 240),
+      oklch(0.60 0.15 220),
+      oklch(0.70 0.14 200),
+      oklch(0.50 0.12 240));
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 8s linear infinite;
+}
+
+/* Floating animation utility */
+.float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Gradient shift animation */
+.gradient-shift {
+  animation: gradientShift 10s ease-in-out infinite;
 }

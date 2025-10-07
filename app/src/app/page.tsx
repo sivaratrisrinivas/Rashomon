@@ -7,13 +7,17 @@ export default async function Home() {
   const { data: { session } } = await supabase.auth.getSession();
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center max-w-md space-y-12">
-        <div className="space-y-4">
-          <h1 className="text-[15px] font-medium tracking-tight">
+    <div className="flex items-center justify-center min-h-screen relative">
+      {/* Floating orbs - psychedelic touch */}
+      <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-gradient-to-br from-violet-200/20 to-fuchsia-200/20 blur-3xl float" style={{ animationDelay: '0s' }} />
+      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-gradient-to-br from-cyan-200/15 to-blue-200/15 blur-3xl float" style={{ animationDelay: '1s' }} />
+
+      <div className="text-center max-w-lg space-y-16 relative z-10 px-6">
+        <div className="space-y-6">
+          <h1 className="text-[32px] font-light tracking-[-0.02em] iridescent">
             Rashomon
           </h1>
-          <p className="text-[13px] text-muted-foreground leading-relaxed">
+          <p className="text-[14px] text-muted-foreground leading-relaxed font-light max-w-md mx-auto">
             A platform for meaningful discussions around shared reading experiences
           </p>
         </div>
@@ -21,7 +25,7 @@ export default async function Home() {
         <Link href="/dashboard">
           <Button
             variant="outline"
-            className="h-10 px-6 text-[13px] font-normal"
+            className="h-12 px-8 text-[13px] font-light tracking-wide glass hover:scale-105 transition-all duration-500 hover:shadow-lg hover:shadow-violet-500/10 border-border/50"
           >
             Continue
           </Button>
