@@ -42,7 +42,7 @@ It's designed for those "aha!" moments when you want to share a reaction immedia
 
 5. **Discuss**: Highlight any text passage to reveal the "Discuss this" button, which instantly connects you with other readers focused on the same section.
 
-6. **Connect**: After a meaningful 5-minute conversation, you'll be prompted to generate an invite link. Share Rashomon with friends who'd appreciate spontaneous discussions around shared reading.
+6. **Connect**: Wrap up the 5-minute conversation and revisit the reading view later to replay past chats directly from highlighted passages.
 
 ---
 
@@ -82,8 +82,6 @@ Rashomon is being developed in phases. Here's what's complete:
 ### ✅ Phase 6: Session Management (Complete)
 - Chat transcript recording
 - Session persistence in database powering Perspective Replay
-- Post-chat invite generation
-- Friend referral system
 
 ### 📋 Coming Next
 - **Phase 7**: Deployment and launch to production
@@ -245,7 +243,7 @@ Upload a screenshot, photo of a page, or PDF, and Google's Vision API reads the 
 Using Supabase's real-time features, we detect when multiple people are reading the same content simultaneously. When you highlight specific text, we capture the exact character range so you only connect with readers focused on overlapping passages. Sessions are later replayable from the reading view.
 
 ### Ephemeral Chats
-Conversations last 5 minutes by default – long enough to exchange ideas but short enough to stay focused. This prevents endless threads and encourages meaningful, in-the-moment discussion. After a great chat, you can generate an invite link to share Rashomon with others.
+Conversations last 5 minutes by default – long enough to exchange ideas but short enough to stay focused. This prevents endless threads and encourages meaningful, in-the-moment discussion. When the timer ends, the transcript is captured so future readers can replay the dialogue from the reading view.
 
 ---
 
