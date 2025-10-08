@@ -9,6 +9,7 @@ import { getSupabaseClient } from '@/lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { PerspectiveReplay } from '@/components/PerspectiveReplay';
 
 type ReadingPageProps = { params: Promise<{ contentId: string }> };
 
@@ -88,8 +89,17 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [presenceChannel, setPresenceChannel] = useState<RealtimeChannel | null>(null);
     const [selectedParagraphIndex, setSelectedParagraphIndex] = useState<number>(-1);
+    const [selectionStartIndex, setSelectionStartIndex] = useState<number>(-1);
+    const [selectionEndIndex, setSelectionEndIndex] = useState<number>(-1);
     const [checkingMatch, setCheckingMatch] = useState(false);
     const [isClient, setIsClient] = useState(false);
+
+    // Perspective Replay state
+    const [replayMode, setReplayMode] = useState(false);
+    const [pastSessions, setPastSessions] = useState<any[]>([]);
+    const [selectedSession, setSelectedSession] = useState<any>(null);
+    const [replayDialogOpen, setReplayDialogOpen] = useState(false);
+    const [currentUserId, setCurrentUserId] = useState<string>('');
 
     // Ensure client-side rendering to prevent hydration mismatches
     useEffect(() => {
@@ -100,6 +110,33 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
     useEffect(() => {
         console.log('🔄 [RENDER] ClientReadingView rendered for contentId:', contentId);
     });
+
+    // Fetch current user ID and past sessions
+    useEffect(() => {
+        const fetchSessionsAndUser = async () => {
+            const supabase = getSupabaseClient();
+            const { data: { session } } = await supabase.auth.getSession();
+
+            if (session) {
+                setCurrentUserId(session.user.id);
+            }
+
+            // Fetch past sessions
+            try {
+                const response = await fetch(`http://localhost:3001/content/${contentId}/sessions`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setPastSessions(data.sessions || []);
+                    console.log('🎭 [REPLAY] Loaded', data.sessions?.length || 0, 'past sessions');
+                    console.log('🎭 [REPLAY] Session details:', JSON.stringify(data.sessions, null, 2));
+                }
+            } catch (error) {
+                console.error('❌ [REPLAY] Failed to fetch sessions:', error);
+            }
+        };
+
+        fetchSessionsAndUser();
+    }, [contentId]);
 
     // Parse the structured content
     interface ContentStructure {
@@ -180,7 +217,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
     }
 
     // Check for existing matches when text is selected
-    const checkForExistingMatch = async (selectedText: string, paragraphIndex: number) => {
+    const checkForExistingMatch = async (selectedText: string, paragraphIndex: number, startIdx?: number, endIdx?: number) => {
         const supabase = getSupabaseClient();
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return false;
@@ -205,30 +242,62 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                     const presenceState = tempChannel.presenceState();
                     const currentUserId = session.user.id;
 
-                    // Get all presence entries with their paragraph info
-                    const allPresences: Array<{ userId: string, selectedText: string, paragraphIndex: number }> = [];
+                    // Get all presence entries with their paragraph and position info
+                    const allPresences: Array<{
+                        userId: string,
+                        selectedText: string,
+                        paragraphIndex: number,
+                        startIndex?: number,
+                        endIndex?: number
+                    }> = [];
                     Object.values(presenceState).forEach((presences: any) => {
                         presences.forEach((presence: any) => {
                             if (presence.userId && presence.userId !== currentUserId) {
                                 allPresences.push({
                                     userId: presence.userId,
                                     selectedText: presence.selectedText || '',
-                                    paragraphIndex: presence.paragraphIndex ?? -1
+                                    paragraphIndex: presence.paragraphIndex ?? -1,
+                                    startIndex: presence.startIndex,
+                                    endIndex: presence.endIndex
                                 });
                             }
                         });
                     });
 
-                    // Check for paragraph-level matches
+                    // Check for matches using precise overlap detection
                     let matchFound = false;
                     for (const otherPresence of allPresences) {
-                        const similarity = calculateSimilarity(selectedText, otherPresence.selectedText);
-                        const sameOrAdjacentParagraph =
-                            Math.abs(paragraphIndex - otherPresence.paragraphIndex) <= 1;
+                        // Must be in the same paragraph
+                        if (paragraphIndex !== otherPresence.paragraphIndex) {
+                            continue;
+                        }
 
-                        if (sameOrAdjacentParagraph && similarity >= 0.6) {
-                            matchFound = true;
-                            break;
+                        // If both have position data, use precise overlap detection
+                        if (
+                            typeof startIdx === 'number' &&
+                            typeof endIdx === 'number' &&
+                            typeof otherPresence.startIndex === 'number' &&
+                            typeof otherPresence.endIndex === 'number'
+                        ) {
+                            // Check if ranges overlap: startA < endB AND startB < endA
+                            const hasOverlap = startIdx < otherPresence.endIndex && otherPresence.startIndex < endIdx;
+
+                            if (hasOverlap) {
+                                console.log('🎯 [MATCH] Precise overlap detected!', {
+                                    current: { start: startIdx, end: endIdx },
+                                    other: { start: otherPresence.startIndex, end: otherPresence.endIndex }
+                                });
+                                matchFound = true;
+                                break;
+                            }
+                        } else {
+                            // Fall back to fuzzy text matching for old highlights without position data
+                            const similarity = calculateSimilarity(selectedText, otherPresence.selectedText);
+                            if (similarity >= 0.6) {
+                                console.log('🎯 [MATCH] Fuzzy text match (backward compatibility):', similarity);
+                                matchFound = true;
+                                break;
+                            }
                         }
                     }
 
@@ -251,14 +320,42 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
 
     useEffect(() => {
         const handleMouseUp = async (e: MouseEvent) => {
-            const sel = window.getSelection()?.toString().trim();
-            if (sel) {
+            const windowSelection = window.getSelection();
+            const sel = windowSelection?.toString().trim();
+            if (sel && windowSelection && windowSelection.rangeCount > 0) {
                 // Find which paragraph this selection belongs to
                 const paraIndex = findParagraphIndex(content.paragraphs, sel);
 
+                // Calculate character positions within the paragraph
+                let startIndex = -1;
+                let endIndex = -1;
+
+                if (paraIndex >= 0) {
+                    try {
+                        const range = windowSelection.getRangeAt(0);
+                        const paragraphText = content.paragraphs[paraIndex];
+
+                        // Find the position of the selected text within the paragraph
+                        const selectedText = range.toString();
+                        startIndex = paragraphText.indexOf(selectedText);
+
+                        if (startIndex >= 0) {
+                            endIndex = startIndex + selectedText.length;
+                            console.log('📍 [SELECTION] Position calculated:', {
+                                paraIndex,
+                                startIndex,
+                                endIndex,
+                                selectedText: selectedText.substring(0, 50) + '...'
+                            });
+                        }
+                    } catch (error) {
+                        console.error('❌ [SELECTION] Error calculating positions:', error);
+                    }
+                }
+
                 // Check for existing match
                 setCheckingMatch(true);
-                const hasMatch = await checkForExistingMatch(sel, paraIndex);
+                const hasMatch = await checkForExistingMatch(sel, paraIndex, startIndex, endIndex);
                 setCheckingMatch(false);
 
                 if (hasMatch) {
@@ -273,7 +370,9 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                                 contentId,
                                 text: sel,
                                 context: processedText.substring(0, 100),
-                                userId: session.user.id
+                                userId: session.user.id,
+                                startIndex: startIndex >= 0 ? startIndex : undefined,
+                                endIndex: endIndex >= 0 ? endIndex : undefined
                             }),
                         });
                     }
@@ -283,10 +382,14 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                     setSelection(sel);
                     setPosition({ x: e.pageX, y: e.pageY });
                     setSelectedParagraphIndex(paraIndex);
+                    setSelectionStartIndex(startIndex);
+                    setSelectionEndIndex(endIndex);
                 }
             } else {
                 setSelection('');
                 setSelectedParagraphIndex(-1);
+                setSelectionStartIndex(-1);
+                setSelectionEndIndex(-1);
             }
         };
         document.addEventListener('mouseup', handleMouseUp);
@@ -306,6 +409,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
         console.log('💬 [DISCUSS] handleDiscuss called');
         console.log('💬 [DISCUSS] Selection:', selection);
         console.log('💬 [DISCUSS] Paragraph index:', selectedParagraphIndex);
+        console.log('📍 [DISCUSS] Position:', { start: selectionStartIndex, end: selectionEndIndex });
         console.log('🔍 [DISCUSS DEBUG] Current contentId:', contentId);
         console.log('🔍 [DISCUSS DEBUG] Full URL:', window.location.href);
         console.log('🔍 [DISCUSS DEBUG] Pathname:', window.location.pathname);
@@ -327,21 +431,20 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
 
         // Save highlight
         console.log('💬 [DISCUSS] Saving highlight...');
-        console.log('🔍 [DISCUSS DEBUG] Highlight request body:', JSON.stringify({
+        const highlightPayload = {
             contentId,
             text: selection,
             context: processedText.substring(0, 100),
-            userId: session.user.id
-        }, null, 2));
+            userId: session.user.id,
+            startIndex: selectionStartIndex >= 0 ? selectionStartIndex : undefined,
+            endIndex: selectionEndIndex >= 0 ? selectionEndIndex : undefined
+        };
+        console.log('🔍 [DISCUSS DEBUG] Highlight request body:', JSON.stringify(highlightPayload, null, 2));
+
         const response = await fetch('http://localhost:3001/highlights', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contentId,
-                text: selection,
-                context: processedText.substring(0, 100),
-                userId: session.user.id
-            }),
+            body: JSON.stringify(highlightPayload),
         });
 
         console.log('💬 [DISCUSS] Highlight save response status:', response.status);
@@ -354,6 +457,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
         const highlightData = await response.json();
         console.log('💬 [DISCUSS] Highlight saved:', highlightData);
         console.log('🔍 [DISCUSS DEBUG] Highlight ID returned:', highlightData.highlightId);
+        console.log('✅ [DISCUSS DEBUG] Will pass highlightId to chat page via URL!');
 
         // Join Presence channel for matching
         const channelName = `content:${contentId}`;
@@ -372,6 +476,8 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                         userId: session.user.id,
                         selectedText: selection,
                         paragraphIndex: selectedParagraphIndex,
+                        startIndex: selectionStartIndex,
+                        endIndex: selectionEndIndex,
                         timestamp: new Date().toISOString()
                     };
                     console.log('💬 [DISCUSS] Tracking presence with:', trackData);
@@ -382,9 +488,10 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
         setPresenceChannel(channel);
         setSelection('');
 
-        // Navigate to chat immediately
-        console.log('💬 [DISCUSS] Navigating to chat:', `/chat/${contentId}`);
-        router.push(`/chat/${contentId}`);
+        // Navigate to chat with highlightId as query param
+        const chatUrl = `/chat/${contentId}?highlightId=${highlightData.highlightId}`;
+        console.log('💬 [DISCUSS] Navigating to chat:', chatUrl);
+        router.push(chatUrl);
     };
 
     // Don't render until client-side to prevent hydration mismatches
@@ -399,17 +506,36 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
     return (
         <div className="min-h-screen relative">
             {/* Ambient reading gradient */}
-            <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full bg-gradient-to-br from-violet-300/8 via-transparent to-cyan-300/8 blur-3xl pointer-events-none gradient-shift" />
+            <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full bg-gradient-to-br from-orange-300/8 via-transparent to-amber-300/8 blur-3xl pointer-events-none gradient-shift" />
 
             {/* Header - Sticky with back navigation */}
             <header className="border-b border-border/50 sticky top-0 glass z-10">
-                <div className="max-w-3xl mx-auto px-8 py-6">
+                <div className="max-w-3xl mx-auto px-8 py-6 flex justify-between items-center">
                     <Link
                         href="/dashboard"
                         className="text-[11px] text-muted-foreground hover:text-foreground transition-all duration-300 inline-block font-light tracking-wide"
                     >
                         ← Library
                     </Link>
+
+                    {/* Perspective Replay Toggle */}
+                    {pastSessions.length > 0 && (
+                        <button
+                            onClick={() => {
+                                console.log('🎭 [REPLAY] Toggling replay mode from', replayMode, 'to', !replayMode);
+                                setReplayMode(!replayMode);
+                            }}
+                            className={`text-[11px] font-light tracking-wide transition-all duration-300 flex items-center gap-2 px-3 py-1.5 rounded-full ${replayMode
+                                ? 'bg-orange-700/10 text-orange-800 border border-orange-700/20'
+                                : 'text-muted-foreground hover:text-foreground border border-transparent'
+                                }`}
+                        >
+                            <span>🎭</span>
+                            <span>Perspective Replay</span>
+                            <span className={`w-2 h-2 rounded-full transition-all duration-300 ${replayMode ? 'bg-orange-700' : 'bg-muted-foreground/30'
+                                }`} />
+                        </button>
+                    )}
                 </div>
             </header>
 
@@ -432,9 +558,55 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                 {/* Content */}
                 <article className="space-y-7" id="content-text">
                     {content.paragraphs.map((para: string, idx: number) => {
+                        // Check if this paragraph has related discussions using precise position matching
+                        const relevantSessions = replayMode ? pastSessions.filter(session => {
+                            console.log(`🔍 [REPLAY] Checking paragraph ${idx} against session:`, {
+                                sessionId: session.id,
+                                highlightedText: session.highlightedText?.substring(0, 50) + '...',
+                                startIndex: session.startIndex,
+                                endIndex: session.endIndex,
+                                paraPreview: para.substring(0, 50) + '...'
+                            });
+
+                            // If session has highlighted text with position data, use precise matching
+                            if (session.highlightedText &&
+                                typeof session.startIndex === 'number' &&
+                                typeof session.endIndex === 'number') {
+
+                                // First, find which paragraph the highlight belongs to
+                                let highlightParagraphIndex = -1;
+                                for (let i = 0; i < content.paragraphs.length; i++) {
+                                    if (content.paragraphs[i].includes(session.highlightedText)) {
+                                        highlightParagraphIndex = i;
+                                        break;
+                                    }
+                                }
+
+                                console.log(`🔍 [REPLAY] Highlight found in paragraph ${highlightParagraphIndex}, current: ${idx}`);
+
+                                // Only show indicator on the exact paragraph that was highlighted
+                                return highlightParagraphIndex === idx;
+                            }
+                            // Fall back to fuzzy matching for old sessions without position data
+                            else if (session.highlightedText) {
+                                const similarity = calculateSimilarity(para, session.highlightedText);
+                                console.log(`🔍 [REPLAY] Fuzzy match similarity: ${similarity}`);
+                                return similarity >= 0.6; // Higher threshold for backward compatibility
+                            }
+                            // If no highlighted text, it's a content-level discussion (show on all paragraphs)
+                            console.log(`🔍 [REPLAY] No highlighted text for session ${session.id}`);
+                            return false; // Changed from true to false - don't show content-level discussions on all paragraphs
+                        }) : [];
+
+                        const hasDiscussions = relevantSessions.length > 0;
+
+                        if (replayMode && idx === 0) {
+                            console.log('🎭 [REPLAY] replayMode is ON, pastSessions count:', pastSessions.length);
+                        }
+
                         if (para.startsWith('> ')) {
                             return (
-                                <blockquote key={idx} className="border-l-2 border-violet-500/30 pl-8 py-3 italic text-[15px] text-muted-foreground/90 leading-[1.9] font-light">
+                                <blockquote key={idx} className="border-l-2 border-orange-700/30 pl-8 py-3 italic text-[15px] text-muted-foreground/90 leading-[1.9] font-light">
                                     {para.substring(2)}
                                 </blockquote>
                             );
@@ -446,9 +618,25 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                             );
                         } else {
                             return (
-                                <p key={idx} className="text-[16px] leading-[1.9] text-foreground/90 tracking-normal font-light">
-                                    {para}
-                                </p>
+                                <div key={idx} className="relative group">
+                                    <p className="text-[16px] leading-[1.9] text-foreground/90 tracking-normal font-light">
+                                        {para}
+                                    </p>
+                                    {/* Replay indicator */}
+                                    {hasDiscussions && (
+                                        <button
+                                            onClick={() => {
+                                                setSelectedSession(relevantSessions[0]);
+                                                setReplayDialogOpen(true);
+                                            }}
+                                            className="absolute -right-8 top-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[11px] text-orange-700 hover:text-orange-800 flex items-center gap-1"
+                                            title={`${relevantSessions.length} discussion${relevantSessions.length > 1 ? 's' : ''}`}
+                                        >
+                                            <span>💬</span>
+                                            <span className="font-mono">{relevantSessions.length}</span>
+                                        </button>
+                                    )}
+                                </div>
                             );
                         }
                     })}
@@ -461,7 +649,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                     <PopoverTrigger asChild>
                         <div style={{ position: 'absolute', top: position.y, left: position.x }} />
                     </PopoverTrigger>
-                    <PopoverContent className="glass shadow-lg shadow-violet-500/10 p-1.5 w-auto border-border/50">
+                    <PopoverContent className="glass shadow-lg shadow-orange-700/10 p-1.5 w-auto border-border/50">
                         <Button
                             onClick={handleDiscuss}
                             variant="ghost"
@@ -476,10 +664,18 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
 
             {/* Checking for match indicator - Floating pill */}
             {checkingMatch && (
-                <div className="fixed bottom-28 right-10 glass px-4 py-2 text-[11px] font-light tracking-wide shadow-md shadow-violet-500/10 border border-border/50">
+                <div className="fixed bottom-28 right-10 glass px-4 py-2 text-[11px] font-light tracking-wide shadow-md shadow-orange-700/10 border border-border/50">
                     Matching...
                 </div>
             )}
+
+            {/* Perspective Replay Dialog */}
+            <PerspectiveReplay
+                open={replayDialogOpen}
+                onOpenChange={setReplayDialogOpen}
+                session={selectedSession}
+                currentUserId={currentUserId}
+            />
 
         </div>
     );

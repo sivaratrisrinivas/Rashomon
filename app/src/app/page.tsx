@@ -9,8 +9,8 @@ export default async function Home() {
   return (
     <div className="flex items-center justify-center min-h-screen relative">
       {/* Floating orbs - psychedelic touch */}
-      <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-gradient-to-br from-violet-200/20 to-fuchsia-200/20 blur-3xl float" style={{ animationDelay: '0s' }} />
-      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-gradient-to-br from-cyan-200/15 to-blue-200/15 blur-3xl float" style={{ animationDelay: '1s' }} />
+      <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-gradient-to-br from-orange-300/20 to-amber-300/20 blur-3xl float" style={{ animationDelay: '0s' }} />
+      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-gradient-to-br from-amber-200/15 to-orange-200/15 blur-3xl float" style={{ animationDelay: '1s' }} />
 
       <div className="text-center max-w-lg space-y-16 relative z-10 px-6">
         <div className="space-y-6">
@@ -25,7 +25,7 @@ export default async function Home() {
         <Link href="/dashboard">
           <Button
             variant="outline"
-            className="h-12 px-8 text-[13px] font-light tracking-wide glass hover:scale-105 transition-all duration-500 hover:shadow-lg hover:shadow-violet-500/10 border-border/50"
+            className="h-12 px-8 text-[13px] font-light tracking-wide glass hover:scale-105 transition-all duration-500 hover:shadow-lg hover:shadow-orange-700/10 border-border/50"
           >
             Continue
           </Button>

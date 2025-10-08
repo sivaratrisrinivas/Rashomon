@@ -96,8 +96,8 @@ const DashboardPage = () => {
     return (
         <div className="min-h-screen relative">
             {/* Ambient gradient orbs */}
-            <div className="fixed top-0 right-0 w-[500px] h-[500px] rounded-full bg-gradient-to-br from-violet-300/10 to-transparent blur-3xl pointer-events-none gradient-shift" />
-            <div className="fixed bottom-0 left-0 w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-cyan-300/10 to-transparent blur-3xl pointer-events-none gradient-shift" style={{ animationDelay: '5s' }} />
+            <div className="fixed top-0 right-0 w-[500px] h-[500px] rounded-full bg-gradient-to-br from-orange-300/10 to-transparent blur-3xl pointer-events-none gradient-shift" />
+            <div className="fixed bottom-0 left-0 w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-amber-300/10 to-transparent blur-3xl pointer-events-none gradient-shift" style={{ animationDelay: '5s' }} />
 
             {/* Header */}
             <header className="border-b border-border/50 sticky top-0 glass z-10">
@@ -155,12 +155,12 @@ const DashboardPage = () => {
                                             placeholder="Paste article URL"
                                             disabled={isUrlProcessing}
                                             onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
-                                            className="h-12 text-[13px] border-border/40 glass md:flex-1 font-light placeholder:text-muted-foreground/50 focus:border-violet-500/30 transition-all duration-300"
+                                            className="h-12 text-[13px] border-border/40 glass md:flex-1 font-light placeholder:text-muted-foreground/50 focus:border-orange-700/30 transition-all duration-300"
                                         />
                                         <Button
                                             onClick={handleUrlSubmit}
                                             disabled={!url.trim() || isUrlProcessing}
-                                            className="h-12 px-6 text-[12px] font-light tracking-wide glass hover:scale-105 transition-all duration-300 hover:shadow-md hover:shadow-violet-500/10 border-border/50"
+                                            className="h-12 px-6 text-[12px] font-light tracking-wide glass hover:scale-105 transition-all duration-300 hover:shadow-md hover:shadow-orange-700/10 border-border/50"
                                             variant="outline"
                                         >
                                             {isUrlProcessing ? 'Processing' : 'Import'}
@@ -173,7 +173,7 @@ const DashboardPage = () => {
                             ) : (
                                 <div className="space-y-4">
                                     <div className="flex flex-col md:flex-row md:items-center gap-4">
-                                        <div className="md:flex-1 border border-border/40 glass px-4 py-3 flex items-center rounded-lg transition-all duration-300 hover:border-violet-500/30">
+                                        <div className="md:flex-1 border border-border/40 glass px-4 py-3 flex items-center rounded-lg transition-all duration-300 hover:border-orange-700/30">
                                             <Input
                                                 type="file"
                                                 onChange={(e) => setFile(e.target.files?.[0] || null)}
@@ -185,7 +185,7 @@ const DashboardPage = () => {
                                         <Button
                                             onClick={handleFileUpload}
                                             disabled={!file || isFileProcessing}
-                                            className="h-12 px-6 text-[12px] font-light tracking-wide glass hover:scale-105 transition-all duration-300 hover:shadow-md hover:shadow-violet-500/10 border-border/50"
+                                            className="h-12 px-6 text-[12px] font-light tracking-wide glass hover:scale-105 transition-all duration-300 hover:shadow-md hover:shadow-orange-700/10 border-border/50"
                                             variant="outline"
                                         >
                                             {isFileProcessing ? 'Processing' : 'Upload'}
@@ -217,7 +217,7 @@ const DashboardPage = () => {
                             <Button
                                 onClick={() => setIsImportExpanded(true)}
                                 variant="outline"
-                                className="h-11 px-6 text-[12px] font-light tracking-wide glass hover:scale-105 transition-all duration-300 hover:shadow-md hover:shadow-violet-500/10 border-border/50"
+                                className="h-11 px-6 text-[12px] font-light tracking-wide glass hover:scale-105 transition-all duration-300 hover:shadow-md hover:shadow-orange-700/10 border-border/50"
                             >
                                 Import now
                             </Button>

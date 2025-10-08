@@ -466,9 +466,22 @@ const app = new Elysia()
   })
   .post('/highlights', async ({ body, set }) => {
     try {
-        const { contentId, text, context, userId } = body as { contentId: string, text: string, context: string, userId: string };
+        const { contentId, text, context, userId, startIndex, endIndex } = body as { 
+            contentId: string, 
+            text: string, 
+            context: string, 
+            userId: string,
+            startIndex?: number,
+            endIndex?: number
+        };
 
-        console.log('🔍 [HIGHLIGHT DEBUG] Received highlight request:', { contentId, userId, textLength: text?.length });
+        console.log('🔍 [HIGHLIGHT DEBUG] Received highlight request:', { 
+            contentId, 
+            userId, 
+            textLength: text?.length,
+            startIndex,
+            endIndex
+        });
 
         if (!contentId || !text || !userId) {
             set.status = 400;
@@ -499,14 +512,23 @@ const app = new Elysia()
         console.log('📝 [HIGHLIGHT] Creating new highlight for contentId:', contentId);
 
         // 3. If not, create a new one (let Postgres generate the UUID)
+        const insertData: any = {
+            user_id: userId,
+            content_id: contentId,
+            highlighted_text: text,
+            surrounding_context: context
+        };
+
+        // Add position data if provided
+        if (typeof startIndex === 'number' && typeof endIndex === 'number') {
+            insertData.start_index = startIndex;
+            insertData.end_index = endIndex;
+            console.log('📍 [HIGHLIGHT] Including position data:', { startIndex, endIndex });
+        }
+
         const { data, error: insertError } = await supabase
             .from('highlights')
-            .insert({
-                user_id: userId,
-                content_id: contentId,
-                highlighted_text: text,
-                surrounding_context: context
-            })
+            .insert(insertData)
             .select('id')
             .single();
 
@@ -557,44 +579,105 @@ const app = new Elysia()
       // Check for existing session based on chat type
       let existingSession;
       if (isHighlightChat) {
+        console.log('🔍 [MESSAGES DEBUG] Searching for session with highlight_id:', highlightId);
         const { data } = await supabase
           .from('chat_sessions')
-          .select('id, transcript')
+          .select('id, transcript, highlight_id, content_id')
           .eq('highlight_id', highlightId)
           .single();
         existingSession = data;
+        console.log('🔍 [MESSAGES DEBUG] Found existing highlight session:', existingSession?.id || 'NONE');
+        
+        // If no highlight-level session exists, check if there's a content-level session we can inherit from
+        if (!existingSession) {
+          console.log('🔍 [MESSAGES DEBUG] No highlight session found. Checking for content session history...');
+          // We need to get contentId from the highlight
+          const { data: highlightData } = await supabase
+            .from('highlights')
+            .select('content_id')
+            .eq('id', highlightId)
+            .single();
+          
+          if (highlightData?.content_id) {
+            console.log('🔍 [MESSAGES DEBUG] Found contentId from highlight:', highlightData.content_id);
+            const { data: contentSession } = await supabase
+              .from('chat_sessions')
+              .select('id, transcript, highlight_id, content_id')
+              .eq('content_id', highlightData.content_id)
+              .is('highlight_id', null)
+              .single();
+            
+            if (contentSession) {
+              console.log('✅ [MESSAGES DEBUG] Found content-level session with history:', contentSession.id);
+              console.log('📝 [MESSAGES DEBUG] Will create NEW highlight session and inherit transcript');
+              // Don't set existingSession - we'll create a new one and copy transcript
+              // Store it temporarily for transcript inheritance
+              existingSession = { shouldInheritFrom: contentSession };
+            }
+          }
+        }
       } else {
+        console.log('🔍 [MESSAGES DEBUG] Searching for session with content_id:', contentId);
         const { data } = await supabase
           .from('chat_sessions')
-          .select('id, transcript')
+          .select('id, transcript, highlight_id, content_id')
           .eq('content_id', contentId)
           .single();
         existingSession = data;
+        console.log('🔍 [MESSAGES DEBUG] Found existing content session:', existingSession?.id || 'NONE');
+        console.log('🔍 [MESSAGES DEBUG] Session has highlight_id?', existingSession?.highlight_id || 'NO');
       }
 
-      if (existingSession) {
-        // Append to existing transcript
+      // Check if this is an inheritance scenario
+      const shouldInherit = (existingSession as any)?.shouldInheritFrom;
+      
+      if (existingSession && !shouldInherit) {
+        // Normal update: Append to existing transcript
         console.log('  ✏️  Updating session:', existingSession.id);
         const updatedTranscript = [...(existingSession.transcript || []), messageEntry];
+        
         const { error } = await supabase
           .from('chat_sessions')
           .update({ transcript: updatedTranscript })
           .eq('id', existingSession.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('  ❌ [UPDATE ERROR] Update failed:', {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            session_id: existingSession.id
+          });
+          throw error;
+        }
+        console.log('  ✅ [UPDATE] Session updated successfully');
         return { success: true, sessionId: existingSession.id };
       } else {
         // Create new session with appropriate ID field
         console.log('  🆕 Creating new session...');
+        
+        // Check if we should inherit transcript from content-level session
+        let initialTranscript = [messageEntry];
+        if (shouldInherit) {
+          const contentSession = shouldInherit;
+          console.log('  📋 [INHERIT] Copying transcript from content session:', contentSession.id);
+          console.log('  📋 [INHERIT] Content session has', contentSession.transcript?.length || 0, 'messages');
+          initialTranscript = [...(contentSession.transcript || []), messageEntry];
+          console.log('  📋 [INHERIT] New session will have', initialTranscript.length, 'messages');
+        }
+        
         const insertData: any = {
           participants: [userId],
-          transcript: [messageEntry]
+          transcript: initialTranscript
         };
         
         if (isHighlightChat) {
           insertData.highlight_id = highlightId;
+          console.log('  📝 [CREATE] New highlight-level session with highlight_id:', highlightId);
         } else {
           insertData.content_id = contentId;
+          console.log('  📝 [CREATE] New content-level session with content_id:', contentId);
         }
         
         const { data, error } = await supabase
@@ -657,6 +740,131 @@ const app = new Elysia()
       return { duplicates };
     } catch (err: any) {
       console.error('❌ [DUPLICATES] Error:', err.message);
+      set.status = 500;
+      return { error: err.message };
+    }
+  })
+  .get('/content/:contentId/sessions', async ({ params, set }) => {
+    const { contentId } = params;
+    
+    if (!contentId) {
+      set.status = 400;
+      return { error: 'Content ID is required' };
+    }
+
+    try {
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      console.log(`🎭 [SESSIONS] Fetching sessions for contentId: ${contentId}`);
+
+      // 1) Content-level sessions (content_id = contentId)
+      const { data: contentSessions, error: contentSessionsError } = await supabase
+        .from('chat_sessions')
+        .select('id, content_id, highlight_id, participants, transcript, created_at')
+        .eq('content_id', contentId);
+
+      if (contentSessionsError) {
+        console.error('❌ [SESSIONS] Content session query error:', contentSessionsError);
+        throw contentSessionsError;
+      }
+
+      // 2) Highlight-level sessions referencing highlights that belong to this content
+      const { data: highlightRows, error: highlightLookupError } = await supabase
+        .from('highlights')
+        .select('id')
+        .eq('content_id', contentId);
+
+      if (highlightLookupError) {
+        console.error('❌ [SESSIONS] Highlight lookup error:', highlightLookupError);
+        throw highlightLookupError;
+      }
+
+      let highlightSessions: any[] = [];
+      if (highlightRows && highlightRows.length > 0) {
+        const highlightIds = highlightRows.map((row) => row.id);
+        console.log('🔍 [SESSIONS] Highlight IDs for content:', highlightIds);
+
+        const { data: highlightSessionData, error: highlightSessionError } = await supabase
+          .from('chat_sessions')
+          .select('id, content_id, highlight_id, participants, transcript, created_at')
+          .in('highlight_id', highlightIds);
+
+        if (highlightSessionError) {
+          console.error('❌ [SESSIONS] Highlight session query error:', highlightSessionError);
+          throw highlightSessionError;
+        }
+
+        highlightSessions = highlightSessionData || [];
+      }
+
+      const combinedSessions = [...(contentSessions || []), ...highlightSessions];
+
+      if (combinedSessions.length === 0) {
+        console.log('📭 [SESSIONS] No sessions found for this content');
+        return { sessions: [] };
+      }
+
+      // Remove duplicates (possible if highlight session also has content_id set in historical data)
+      const seen = new Set();
+      const sessions = combinedSessions.filter((session) => {
+        if (seen.has(session.id)) {
+          return false;
+        }
+        seen.add(session.id);
+        return true;
+      }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      // For each session, try to get associated highlight text and position data if highlight_id exists
+      const enrichedSessions = await Promise.all(
+        sessions.map(async (session) => {
+          console.log('🔍 [SESSIONS DEBUG] Processing session:', session.id);
+          console.log('🔍 [SESSIONS DEBUG] Session has highlight_id?', session.highlight_id || 'NO');
+          
+          let highlightedText = null;
+          let startIndex = null;
+          let endIndex = null;
+          
+          if (session.highlight_id) {
+            console.log('🔍 [SESSIONS DEBUG] Fetching highlight data for highlight_id:', session.highlight_id);
+            const { data: highlight, error: highlightError } = await supabase
+              .from('highlights')
+              .select('highlighted_text, start_index, end_index')
+              .eq('id', session.highlight_id)
+              .single();
+            
+            if (highlightError) {
+              console.log('❌ [SESSIONS DEBUG] Error fetching highlight:', highlightError.message);
+            }
+            
+            if (highlight) {
+              console.log('✅ [SESSIONS DEBUG] Found highlight data:', { text: highlight.highlighted_text?.substring(0, 50) + '...', startIndex: highlight.start_index, endIndex: highlight.end_index });
+              highlightedText = highlight.highlighted_text;
+              startIndex = highlight.start_index;
+              endIndex = highlight.end_index;
+            } else {
+              console.log('❌ [SESSIONS DEBUG] No highlight found for highlight_id:', session.highlight_id);
+            }
+          } else {
+            console.log('⚠️ [SESSIONS DEBUG] Session has no highlight_id - will return null highlight data');
+          }
+
+          return {
+            id: session.id,
+            highlightedText,
+            startIndex,
+            endIndex,
+            transcript: session.transcript || [],
+            participantCount: Array.isArray(session.participants) ? session.participants.length : 0,
+            createdAt: session.created_at
+          };
+        })
+      );
+
+      console.log(`✅ [SESSIONS] Found ${enrichedSessions.length} sessions`);
+      return { sessions: enrichedSessions };
+
+    } catch (err: any) {
+      console.error('❌ [SESSIONS] Error:', err.message);
       set.status = 500;
       return { error: err.message };
     }

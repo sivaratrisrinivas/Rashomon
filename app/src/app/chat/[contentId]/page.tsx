@@ -25,9 +25,20 @@ export default function ChatPage({ params }: ChatPageProps) {
     const [otherUserPresent, setOtherUserPresent] = useState(false);
     const [contentTitle, setContentTitle] = useState('');
     const [timerExpired, setTimerExpired] = useState(false);
+    const [highlightId, setHighlightId] = useState<string | null>(null);
     const chatSetupRunCountRef = useRef(0);
     const chatMessageHandlerIdRef = useRef<string | null>(null);
     const chatMessageCallbackCountRef = useRef(0);
+
+    // Extract highlightId from URL query params
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const hId = params.get('highlightId');
+            console.log('🔍 [CHAT] Extracted highlightId from URL:', hId || 'NONE');
+            setHighlightId(hId);
+        }
+    }, []);
 
     // Log state changes for debugging
     useEffect(() => {
@@ -231,6 +242,8 @@ export default function ChatPage({ params }: ChatPageProps) {
                 .subscribe(async (status) => {
                     console.log('📡 [PRESENCE] Subscription status:', status);
                     if (status === 'SUBSCRIBED') {
+                        // Note: In chat page, we're already matched, so we don't need to track selection data
+                        // The selection data was tracked in the reading page before navigation
                         const trackData = {
                             userId: localUserId,
                             online_at: new Date().toISOString(),
@@ -349,15 +362,29 @@ export default function ChatPage({ params }: ChatPageProps) {
 
         try {
             console.log('📤 [SEND] Persisting to backend...');
+            const messagePayload: any = {
+                userId: currentUserId,
+                message: newMessage,
+                timestamp: message.timestamp,
+            };
+
+            // Add either highlightId OR contentId (highlightId takes precedence)
+            if (highlightId) {
+                messagePayload.highlightId = highlightId;
+                console.log('✅ [SEND DEBUG] Payload includes highlightId:', highlightId);
+                console.log('✅ [SEND DEBUG] This will create/update a HIGHLIGHT-LEVEL session!');
+            } else {
+                messagePayload.contentId = contentId;
+                console.log('⚠️ [SEND DEBUG] Payload has contentId but NO highlightId!');
+                console.log('⚠️ [SEND DEBUG] This will create a content-level session without highlight data!');
+            }
+
+            console.log('🔍 [SEND DEBUG] Full message payload:', messagePayload);
+
             const response = await fetch('http://localhost:3001/messages', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contentId,
-                    userId: currentUserId,
-                    message: newMessage,
-                    timestamp: message.timestamp,
-                }),
+                body: JSON.stringify(messagePayload),
             });
             console.log('📤 [SEND] Backend response status:', response.status);
             const data = await response.json();
@@ -377,7 +404,7 @@ export default function ChatPage({ params }: ChatPageProps) {
     return (
         <div className="min-h-screen flex flex-col relative">
             {/* Ambient gradient for chat */}
-            <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-gradient-to-br from-violet-300/10 to-cyan-300/10 blur-3xl pointer-events-none gradient-shift" />
+            <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-gradient-to-br from-orange-300/10 to-amber-300/10 blur-3xl pointer-events-none gradient-shift" />
 
             {/* Header */}
             <header className="border-b border-border/50 sticky top-0 z-10 glass">
@@ -433,7 +460,7 @@ export default function ChatPage({ params }: ChatPageProps) {
                                             <div
                                                 className={`px-5 py-3.5 transition-all duration-300 ${isOwnMessage
                                                     ? 'bg-foreground text-background rounded-2xl rounded-tr-md hover:scale-[1.01]'
-                                                    : 'glass border border-border/40 rounded-2xl rounded-tl-md hover:scale-[1.01] hover:shadow-md hover:shadow-violet-500/10'
+                                                    : 'glass border border-border/40 rounded-2xl rounded-tl-md hover:scale-[1.01] hover:shadow-md hover:shadow-orange-700/10'
                                                     }`}
                                             >
                                                 <p className="text-[14px] leading-[1.7] font-light">{msg.text}</p>
@@ -453,13 +480,13 @@ export default function ChatPage({ params }: ChatPageProps) {
                                 onChange={(e) => setNewMessage(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                                 placeholder={!otherUserPresent || timerExpired ? "Waiting for another reader..." : "Type a message..."}
-                                className="flex-1 h-12 text-[13px] glass border-border/40 font-light placeholder:text-muted-foreground/40 focus:border-violet-500/30 transition-all duration-300"
+                                className="flex-1 h-12 text-[13px] glass border-border/40 font-light placeholder:text-muted-foreground/40 focus:border-orange-700/30 transition-all duration-300"
                                 disabled={!otherUserPresent || timerExpired}
                             />
                             <Button
                                 onClick={sendMessage}
                                 disabled={!newMessage.trim() || !otherUserPresent || timerExpired}
-                                className="h-12 px-6 text-[12px] font-light tracking-wide glass hover:scale-105 transition-all duration-300 hover:shadow-md hover:shadow-violet-500/10 border-border/50"
+                                className="h-12 px-6 text-[12px] font-light tracking-wide glass hover:scale-105 transition-all duration-300 hover:shadow-md hover:shadow-orange-700/10 border-border/50"
                                 variant="outline"
                             >
                                 Send

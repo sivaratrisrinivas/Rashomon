@@ -113,7 +113,7 @@ const ChatInterface = ({ roomName }: { roomName: string }) => {
             </div>
 
             <Dialog open={showModal} onOpenChange={setShowModal}>
-                <DialogContent className="glass border-border/50 shadow-2xl shadow-violet-500/10">
+                <DialogContent className="glass border-border/50 shadow-2xl shadow-orange-700/10">
                     <DialogHeader>
                         <DialogTitle className="text-[18px] font-light tracking-tight">Session Complete</DialogTitle>
                         <DialogDescription className="text-[13px] text-muted-foreground/80 leading-relaxed font-light">

@@ -36,7 +36,7 @@ const OnboardingPage = () => {
 
     return (
         <Dialog open={true}>
-            <DialogContent className="glass border-border/50 shadow-2xl shadow-violet-500/10">
+            <DialogContent className="glass border-border/50 shadow-2xl shadow-orange-700/10">
                 <DialogHeader>
                     <DialogTitle className="text-[20px] font-light tracking-tight">Reading Preferences</DialogTitle>
                 </DialogHeader>
@@ -68,7 +68,7 @@ const OnboardingPage = () => {
                     <Button
                         onClick={handleSubmit}
                         variant="outline"
-                        className="w-full h-11 text-[13px] font-light tracking-wide glass hover:scale-[1.02] transition-all duration-300 hover:shadow-md hover:shadow-violet-500/10 border-border/50"
+                        className="w-full h-11 text-[13px] font-light tracking-wide glass hover:scale-[1.02] transition-all duration-300 hover:shadow-md hover:shadow-orange-700/10 border-border/50"
                     >
                         Continue
                     </Button>
