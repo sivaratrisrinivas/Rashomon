@@ -199,9 +199,9 @@ export default function ChatPage({ params }: ChatPageProps) {
                 console.log('🔍 [PRESENCE DEBUG] Current userId (localUserId):', localUserId);
 
                 const userIds = new Set<string>();
-                Object.values(presenceState).forEach((presences: any) => {
+                Object.values(presenceState).forEach((presences: unknown[]) => {
                     console.log('🔍 [PRESENCE DEBUG] Processing presence array:', presences);
-                    presences.forEach((p: any) => {
+                    presences.forEach((p: Record<string, unknown>) => {
                         console.log('🔍 [PRESENCE DEBUG] Individual presence object:', p);
                         if (p.userId) {
                             console.log('🔍 [PRESENCE DEBUG] Adding userId to set:', p.userId);
@@ -364,7 +364,7 @@ export default function ChatPage({ params }: ChatPageProps) {
 
         try {
             console.log('📤 [SEND] Persisting to backend...');
-            const messagePayload: any = {
+            const messagePayload: Record<string, unknown> = {
                 userId: currentUserId,
                 message: newMessage,
                 timestamp: message.timestamp,

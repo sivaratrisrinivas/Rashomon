@@ -57,7 +57,7 @@ export function PerspectiveReplay({
                 {session.highlightedText && (
                     <div className="border-l-2 border-orange-700/30 pl-4 py-2 mb-4">
                         <p className="text-[13px] text-muted-foreground/80 italic font-light leading-relaxed">
-                            "{session.highlightedText}"
+                            &ldquo;{session.highlightedText}&rdquo;
                         </p>
                     </div>
                 )}

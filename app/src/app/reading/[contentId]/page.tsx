@@ -98,8 +98,8 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
 
     // Perspective Replay state
     const [replayMode, setReplayMode] = useState(false);
-    const [pastSessions, setPastSessions] = useState<any[]>([]);
-    const [selectedSession, setSelectedSession] = useState<any>(null);
+    const [pastSessions, setPastSessions] = useState<Record<string, unknown>[]>([]);
+    const [selectedSession, setSelectedSession] = useState<Record<string, unknown> | null>(null);
     const [replayDialogOpen, setReplayDialogOpen] = useState(false);
     const [currentUserId, setCurrentUserId] = useState<string>('');
 
@@ -252,8 +252,8 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                         startIndex?: number,
                         endIndex?: number
                     }> = [];
-                    Object.values(presenceState).forEach((presences: any) => {
-                        presences.forEach((presence: any) => {
+                    Object.values(presenceState).forEach((presences: unknown[]) => {
+                        presences.forEach((presence: Record<string, unknown>) => {
                             if (presence.userId && presence.userId !== currentUserId) {
                                 allPresences.push({
                                     userId: presence.userId,
