@@ -1,13 +1,20 @@
 import { Elysia } from 'elysia';
 import { cors } from '@elysiajs/cors';
 import { createClient } from '@supabase/supabase-js';
-import * as dotenv from 'dotenv';
 import * as cheerio from 'cheerio';
 import { ImageAnnotatorClient } from '@google-cloud/vision';
 // crypto is no longer needed for hashing highlights, but we keep it for other potential uses
 import { createHash } from 'crypto';
 
-dotenv.config();
+// dotenv only needed for local dev - production uses platform env vars
+if (process.env.NODE_ENV !== 'production') {
+  try {
+    const dotenv = await import('dotenv');
+    dotenv.config();
+  } catch {
+    // dotenv not installed - using platform env vars
+  }
+}
 
 
 const supabaseUrl = process.env.SUPABASE_URL!;
