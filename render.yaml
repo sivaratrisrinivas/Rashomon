@@ -13,3 +13,20 @@ services:
       - key: GOOGLE_CLOUD_VISION_API_KEY
         sync: false
     healthCheckPath: /
+
+  - type: web
+    name: rashomon-frontend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./app/Dockerfile
+    dockerContext: ./app
+    envVars:
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: NEXT_PUBLIC_API_URL
+        value: https://rashomon-api.onrender.com
+    healthCheckPath: /
