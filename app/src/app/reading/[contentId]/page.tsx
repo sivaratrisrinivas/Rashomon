@@ -252,15 +252,18 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                         startIndex?: number,
                         endIndex?: number
                     }> = [];
+                    // Supabase presenceState() returns weakly typed data (unknown[])
+                    // Need explicit type assertion since TS can't infer types during iteration
                     Object.values(presenceState).forEach((presences: unknown[]) => {
-                        presences.forEach((presence: Record<string, unknown>) => {
+                        presences.forEach((p) => {
+                            const presence = p as Record<string, unknown>;
                             if (presence.userId && presence.userId !== currentUserId) {
                                 allPresences.push({
-                                    userId: presence.userId,
-                                    selectedText: presence.selectedText || '',
-                                    paragraphIndex: presence.paragraphIndex ?? -1,
-                                    startIndex: presence.startIndex,
-                                    endIndex: presence.endIndex
+                                    userId: presence.userId as string,
+                                    selectedText: (presence.selectedText as string) || '',
+                                    paragraphIndex: (presence.paragraphIndex as number) ?? -1,
+                                    startIndex: presence.startIndex as number | undefined,
+                                    endIndex: presence.endIndex as number | undefined
                                 });
                             }
                         });

@@ -199,6 +199,8 @@ export default function ChatPage({ params }: ChatPageProps) {
                 console.log('🔍 [PRESENCE DEBUG] Current userId (localUserId):', localUserId);
 
                 const userIds = new Set<string>();
+                // Supabase presenceState() returns weakly typed data (unknown[])
+                // Need explicit type assertion since TS can't infer types during iteration
                 Object.values(presenceState).forEach((presences: unknown[]) => {
                     console.log('🔍 [PRESENCE DEBUG] Processing presence array:', presences);
                     presences.forEach((p) => {
