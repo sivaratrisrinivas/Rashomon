@@ -272,6 +272,114 @@ We test at multiple levels:
 
 ---
 
+## Deployment
+
+Ready to deploy Rashomon to production? Here's how to get both the frontend and backend live.
+
+### Prerequisites
+
+- GitHub account (for CI/CD and Render deployment)
+- Vercel account (for frontend hosting)
+- Render account (for backend hosting - **no credit card required**)
+- Environment variables from development setup
+
+### Deploy Backend to Render
+
+1. **Push code to GitHub** (if not already)
+   ```bash
+   git add .
+   git commit -m "Add deployment config"
+   git push origin main
+   ```
+
+2. **Go to Render Dashboard**
+   - Visit [render.com](https://render.com)
+   - Sign up/login with GitHub (no credit card needed)
+
+3. **Create New Web Service**
+   - Click "New +" → "Web Service"
+   - Connect your GitHub repo
+   - Render auto-detects `render.yaml` config
+
+4. **Set Environment Variables**
+   In the Render dashboard:
+   - `SUPABASE_URL` → your Supabase project URL
+   - `SUPABASE_SERVICE_ROLE_KEY` → from Supabase Settings → API
+   - `GOOGLE_CLOUD_VISION_API_KEY` → from Google Cloud Console
+
+5. **Deploy**
+   - Click "Create Web Service"
+   - Wait 2-3 minutes for build
+   
+   Your API URL will be: `https://rashomon-api.onrender.com` (or similar)
+
+### Deploy Frontend to Vercel
+
+1. **Push to GitHub** (if not already)
+   ```bash
+   git add .
+   git commit -m "Ready for deployment"
+   git push origin main
+   ```
+
+2. **Connect to Vercel**
+   - Go to [vercel.com](https://vercel.com)
+   - Click "New Project"
+   - Import your GitHub repository
+   - Select "app" as the root directory
+
+3. **Configure environment variables** in Vercel dashboard:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   NEXT_PUBLIC_API_URL=https://your-api.onrender.com
+   ```
+
+4. **Deploy**
+   Vercel auto-deploys on every push to main.
+
+5. **Update Supabase redirect URLs**
+   - Go to Supabase Dashboard → Authentication → URL Configuration
+   - Add your Vercel domain to Redirect URLs
+
+### CI/CD Pipeline
+
+GitHub Actions automatically runs tests on every push. Workflow includes:
+- Backend unit tests
+- Frontend unit tests  
+- E2E tests with Cypress
+- Deployment gate (only proceed if tests pass)
+
+Add these secrets to your GitHub repository (Settings → Secrets):
+```
+SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
+GOOGLE_CLOUD_VISION_API_KEY
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+NEXT_PUBLIC_API_URL
+```
+
+### Troubleshooting
+
+**Backend won't start on Render**
+- Check logs in Render dashboard
+- Verify environment variables are set correctly
+
+**Backend is slow to respond**
+- Free tier sleeps after 15min inactivity
+- First request after sleep takes ~30s (cold start)
+
+**Frontend can't reach backend**
+- Confirm `NEXT_PUBLIC_API_URL` matches Render URL
+- Check CORS settings in backend
+
+**Auth redirect fails**
+- Ensure Vercel domain is in Supabase redirect URLs
+- Check auth callback route exists at `/auth/callback`
+
+---
+
 ## Contributing
 
 This is currently a learning project and personal experiment. If you're interested in contributing or have ideas, feel free to open an issue or reach out.

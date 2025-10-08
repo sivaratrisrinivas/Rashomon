@@ -8,6 +8,8 @@ import { getSupabaseClient } from '@/lib/supabase';
 import Link from 'next/link';
 import { Info } from 'lucide-react';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 const DashboardPage = () => {
     const [url, setUrl] = useState('');
     const [file, setFile] = useState<File | null>(null);
@@ -25,7 +27,7 @@ const DashboardPage = () => {
             const { data: { session } } = await getSupabaseClient().auth.getSession();
             if (!session) return;
 
-            const response = await fetch('http://localhost:3001/content/url', {
+            const response = await fetch(`${API_URL}/content/url`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url, userId: session.user.id }),
@@ -67,7 +69,7 @@ const DashboardPage = () => {
             }
 
             console.log('File uploaded, processing OCR...');
-            const response = await fetch('http://localhost:3001/content/upload', {
+            const response = await fetch(`${API_URL}/content/upload`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ filePath, userId: session.user.id }),

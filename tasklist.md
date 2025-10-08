@@ -258,18 +258,37 @@ This phase leverages **Supabase Realtime** instead of a custom WebSocket server.
 
 ### Task 7.1: Final Testing and Deployment
 - [ ] **Task 7.1 Complete**
-- [ ] 1.  **Deploy Frontend**: Deploy the Next.js application in the `app` directory to **Vercel**. Connect it to your Git repository for automatic deployments. Add your environment variables (`.env.local` contents) to the Vercel project settings. (Note: Vercel supports Bun natively; configure the project to use Bun as the runtime in settings if needed.)
-- [ ] 2.  **Deploy Backend**:
-    - [ ] Create a `Dockerfile` for your Bun/Elysia application in the `api` directory.
-    - [ ] Deploy the backend as a container to a service like **Fly.io**, **Railway**, or **Google Cloud Run**.
-    - [ ] Add your environment variables (Supabase keys, Google Cloud keys) to the hosting service.
-- [ ] 3.  **Final Configuration**: Ensure your frontend application's API requests point to your deployed backend URL.
+- [x] 1.  **Deployment Configuration**:
+    - [x] Created `Dockerfile` for Bun/Elysia backend
+    - [x] Created `render.yaml` for Render deployment (no credit card needed)
+    - [x] Updated all frontend API URLs to use `NEXT_PUBLIC_API_URL` env variable
+    - [x] Created `env.example` file documenting required environment variables
+    - [x] Set up GitHub Actions CI/CD workflow
+    - [x] Updated README with comprehensive deployment instructions
+- [ ] 2.  **Deploy Backend to Render** (no credit card required):
+    - [ ] Push code to GitHub
+    - [ ] Sign up at render.com with GitHub
+    - [ ] Create new Web Service from repo (auto-detects render.yaml)
+    - [ ] Set environment variables in Render dashboard
+    - [ ] Deploy and copy the generated URL
+- [ ] 3.  **Deploy Frontend to Vercel**:
+    - [ ] Connect GitHub repository to Vercel
+    - [ ] Configure root directory as `app`
+    - [ ] Add environment variables to Vercel dashboard
+    - [ ] Deploy and verify frontend loads
+    - [ ] Update Supabase auth redirect URLs with Vercel domain
+- [ ] 4.  **Configure CI/CD**:
+    - [ ] Add GitHub secrets for environment variables
+    - [ ] Verify workflow runs on push to main
+    - [ ] Ensure tests pass before deployment
 
-* **CI/CD**:
-    - [ ] Set up a GitHub Action that automatically runs `bun test` for the backend and `bun test` and `bunx cypress run` for the frontend on every push to the main branch. The deployment to Vercel/Fly.io should only proceed if all tests pass.
 * **Smoke Tests (Manual)**:
-    - [ ] On the live production URL, perform the entire user journey: Sign in with Google, onboard, process content via URL, highlight it, and (if possible with a second person) test the real-time chat.
+    - [ ] Sign in with Google on production
+    - [ ] Complete onboarding flow
+    - [ ] Process content via URL
+    - [ ] Highlight text and test matching
+    - [ ] Test real-time chat with another user (if available)
 * **Success Criteria**:
     - [ ] The CI/CD pipeline is green (all tests pass).
-    - [ ] The frontend is live on Vercel and the backend is live on its host.
+    - [ ] The frontend is live on Vercel and the backend is live on Render.
     - [ ] The application is fully functional in the production environment.

@@ -11,6 +11,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PerspectiveReplay } from '@/components/PerspectiveReplay';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 type ReadingPageProps = { params: Promise<{ contentId: string }> };
 
 export default function ReadingPage({ params }: ReadingPageProps) {
@@ -123,7 +125,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
 
             // Fetch past sessions
             try {
-                const response = await fetch(`http://localhost:3001/content/${contentId}/sessions`);
+                const response = await fetch(`${API_URL}/content/${contentId}/sessions`);
                 if (response.ok) {
                     const data = await response.json();
                     setPastSessions(data.sessions || []);
@@ -363,7 +365,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                     const supabase = getSupabaseClient();
                     const { data: { session } } = await supabase.auth.getSession();
                     if (session) {
-                        await fetch('http://localhost:3001/highlights', {
+                        await fetch(`${API_URL}/highlights`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -441,7 +443,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
         };
         console.log('🔍 [DISCUSS DEBUG] Highlight request body:', JSON.stringify(highlightPayload, null, 2));
 
-        const response = await fetch('http://localhost:3001/highlights', {
+        const response = await fetch(`${API_URL}/highlights`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(highlightPayload),

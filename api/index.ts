@@ -869,6 +869,6 @@ const app = new Elysia()
       return { error: err.message };
     }
   })
-  .listen(3001);
+  .listen(process.env.PORT || 3001);
 
 console.log(`Server running at ${app.server?.hostname}:${app.server?.port}`);

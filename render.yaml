@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: rashomon-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: ./api
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GOOGLE_CLOUD_VISION_API_KEY
+        sync: false
+    healthCheckPath: /
