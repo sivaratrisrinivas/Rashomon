@@ -68,7 +68,7 @@ Rashomon is being developed in phases. Here's what's complete:
 - Reading interface for viewing processed content
 
 ### ✅ Phase 4: Highlighting Interface (Complete)
-- Text selection and highlighting
+- Text selection and highlighting with precise position capture
 - Real-time matching with other readers
 - Intelligent paragraph-level matching
 
@@ -77,10 +77,11 @@ Rashomon is being developed in phases. Here's what's complete:
 - Live chat with matched readers
 - 5-minute timed discussion sessions
 - Broadcast messaging system
+- Chat transcripts reused for Perspective Replay
 
 ### ✅ Phase 6: Session Management (Complete)
 - Chat transcript recording
-- Session persistence in database
+- Session persistence in database powering Perspective Replay
 - Post-chat invite generation
 - Friend referral system
 
@@ -241,7 +242,7 @@ When you paste a web address, we fetch that page's HTML, parse it, and extract j
 Upload a screenshot, photo of a page, or PDF, and Google's Vision API reads the text like a human would. It's surprisingly accurate, even with handwriting or unusual fonts.
 
 ### Real-Time Matching
-Using Supabase's real-time features, we detect when multiple people are reading the same content simultaneously. When you highlight specific text, you can instantly connect with other readers focused on the same passage for a focused discussion.
+Using Supabase's real-time features, we detect when multiple people are reading the same content simultaneously. When you highlight specific text, we capture the exact character range so you only connect with readers focused on overlapping passages. Sessions are later replayable from the reading view.
 
 ### Ephemeral Chats
 Conversations last 5 minutes by default – long enough to exchange ideas but short enough to stay focused. This prevents endless threads and encourages meaningful, in-the-moment discussion. After a great chat, you can generate an invite link to share Rashomon with others.

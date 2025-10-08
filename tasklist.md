@@ -6,26 +6,27 @@
 - ✅ **Phase 1**: Complete - Project setup, services configured
 - ✅ **Phase 2**: Complete - Auth & onboarding fully functional
 - ✅ **Phase 3**: Complete - URL scraping & OCR working
-- ✅ **Phase 4**: Complete - Reading view & highlighting functional
-- ✅ **Phase 5**: Complete - Real-time chat & matching works (though implementation differs from original design)
-- ✅ **Phase 6**: Complete - Chat sessions save to database
+- ✅ **Phase 4**: Complete - Reading view & highlighting functional (now with precise highlight position capture)
+- ✅ **Phase 5**: Complete - Real-time chat & matching works (implementation differs from original design but includes overlap-aware pairing)
+- ✅ **Phase 6**: Complete - Chat sessions save to database and power Perspective Replay history
 - ❌ **Phase 7**: Not started - No deployment config
 
 ### Critical Gaps:
 1. **No Deployment Setup**: No Dockerfile, no CI/CD, no Vercel config
 
 ### Test Status:
-- ✅ **Backend unit tests**: All pass (profile, content, highlights, messages endpoints work)
-- ✅ **Frontend unit tests**: Pass for `LoginPage` 
-- ✅ **E2E tests**: `content.cy.ts` and `highlighting.cy.ts` likely pass
+- ✅ **Backend unit tests**: All pass (profile, content, highlights, messages, sessions endpoints work)
+- ✅ **Frontend unit tests**: Pass for `LoginPage`, `PerspectiveReplay` dialog
+- ✅ **E2E tests**: `content.cy.ts`, `highlighting.cy.ts`, and new `replay.cy.ts` journey cover core flows
 
 ### Files/Components Status:
-- ✅ `/api/index.ts` - All endpoints implemented and tested
+- ✅ `/api/index.ts` - All endpoints implemented (sessions endpoint now merges highlight-level chats) and tested
 - ✅ `/app/src/app/login/page.tsx` - Works
 - ✅ `/app/src/app/onboarding/page.tsx` - Works
 - ✅ `/app/src/app/dashboard/page.tsx` - Works (URL & file upload)
-- ✅ `/app/src/app/reading/[contentId]/page.tsx` - Works (highlighting & matching)
-- ✅ `/app/src/app/chat/[contentId]/page.tsx` - Works (real-time chat)
+- ✅ `/app/src/app/reading/[contentId]/page.tsx` - Works (highlighting, overlap detection, Perspective Replay indicators)
+- ✅ `/app/src/app/chat/[contentId]/page.tsx` - Works (real-time chat + replay transcript inheritance)
+- ✅ `/app/src/components/PerspectiveReplay.tsx` - Works (dialog powering replay modal)
 
 ---
 
