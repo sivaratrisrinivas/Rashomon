@@ -11,6 +11,23 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PerspectiveReplay } from '@/components/PerspectiveReplay';
 
+interface Message {
+    userId: string;
+    message: string;
+    timestamp: string;
+}
+
+interface ChatSession {
+    id: string;
+    highlightedText: string | null;
+    transcript: Message[];
+    participantCount: number;
+    createdAt: string;
+    startIndex?: number;
+    endIndex?: number;
+}
+
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 type ReadingPageProps = { params: Promise<{ contentId: string }> };
@@ -98,8 +115,8 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
 
     // Perspective Replay state
     const [replayMode, setReplayMode] = useState(false);
-    const [pastSessions, setPastSessions] = useState<Record<string, unknown>[]>([]);
-    const [selectedSession, setSelectedSession] = useState<Record<string, unknown> | null>(null);
+    const [pastSessions, setPastSessions] = useState<ChatSession[]>([]);
+    const [selectedSession, setSelectedSession] = useState<ChatSession | null>(null);
     const [replayDialogOpen, setReplayDialogOpen] = useState(false);
     const [currentUserId, setCurrentUserId] = useState<string>('');
 
@@ -565,23 +582,24 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                     {content.paragraphs.map((para: string, idx: number) => {
                         // Check if this paragraph has related discussions using precise position matching
                         const relevantSessions = replayMode ? pastSessions.filter(session => {
+                            const highlightedText = session.highlightedText;
                             console.log(`🔍 [REPLAY] Checking paragraph ${idx} against session:`, {
                                 sessionId: session.id,
-                                highlightedText: session.highlightedText?.substring(0, 50) + '...',
+                                highlightedText: highlightedText?.substring(0, 50) + '...',
                                 startIndex: session.startIndex,
                                 endIndex: session.endIndex,
                                 paraPreview: para.substring(0, 50) + '...'
                             });
 
                             // If session has highlighted text with position data, use precise matching
-                            if (session.highlightedText &&
+                            if (highlightedText &&
                                 typeof session.startIndex === 'number' &&
                                 typeof session.endIndex === 'number') {
 
                                 // First, find which paragraph the highlight belongs to
                                 let highlightParagraphIndex = -1;
                                 for (let i = 0; i < content.paragraphs.length; i++) {
-                                    if (content.paragraphs[i].includes(session.highlightedText)) {
+                                    if (content.paragraphs[i].includes(highlightedText)) {
                                         highlightParagraphIndex = i;
                                         break;
                                     }
@@ -593,8 +611,8 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                                 return highlightParagraphIndex === idx;
                             }
                             // Fall back to fuzzy matching for old sessions without position data
-                            else if (session.highlightedText) {
-                                const similarity = calculateSimilarity(para, session.highlightedText);
+                            else if (highlightedText) {
+                                const similarity = calculateSimilarity(para, highlightedText);
                                 console.log(`🔍 [REPLAY] Fuzzy match similarity: ${similarity}`);
                                 return similarity >= 0.6; // Higher threshold for backward compatibility
                             }
