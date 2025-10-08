@@ -201,13 +201,14 @@ export default function ChatPage({ params }: ChatPageProps) {
                 const userIds = new Set<string>();
                 Object.values(presenceState).forEach((presences: unknown[]) => {
                     console.log('🔍 [PRESENCE DEBUG] Processing presence array:', presences);
-                    presences.forEach((p: Record<string, unknown>) => {
-                        console.log('🔍 [PRESENCE DEBUG] Individual presence object:', p);
-                        if (p.userId) {
-                            console.log('🔍 [PRESENCE DEBUG] Adding userId to set:', p.userId);
-                            userIds.add(p.userId);
+                    presences.forEach((p) => {
+                        const presence = p as Record<string, unknown>;
+                        console.log('🔍 [PRESENCE DEBUG] Individual presence object:', presence);
+                        if (presence.userId) {
+                            console.log('🔍 [PRESENCE DEBUG] Adding userId to set:', presence.userId);
+                            userIds.add(presence.userId as string);
                         } else {
-                            console.log('⚠️  [PRESENCE DEBUG] Presence missing userId:', p);
+                            console.log('⚠️  [PRESENCE DEBUG] Presence missing userId:', presence);
                         }
                     });
                 });
