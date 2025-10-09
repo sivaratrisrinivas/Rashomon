@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
-import { getBrowserRuntimeEnv } from '@/lib/runtime-env';
+import { getSupabaseClient } from '@/lib/supabase';
 
 export default function AuthCallbackPage() {
     const router = useRouter();
@@ -14,8 +13,7 @@ export default function AuthCallbackPage() {
             try {
                 console.log('[CLIENT CALLBACK] Starting client-side callback handling');
 
-                const { supabaseUrl, supabaseAnonKey } = getBrowserRuntimeEnv();
-                const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
+                const supabase = getSupabaseClient();
 
                 // Get code from URL
                 const urlParams = new URLSearchParams(window.location.search);
