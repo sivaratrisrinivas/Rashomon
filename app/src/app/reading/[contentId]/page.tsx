@@ -383,8 +383,8 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                 if (hasMatch) {
                     // Save highlight before navigating
                     const supabase = getSupabaseClient();
-                    const { data: { session } } = await supabase.auth.getSession();
-                    if (session) {
+                    const { data: { session: userSession } } = await supabase.auth.getSession();
+                    if (userSession) {
                         await fetch(`${API_URL}/highlights`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -392,7 +392,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                                 contentId,
                                 text: sel,
                                 context: processedText.substring(0, 100),
-                                userId: session.user.id,
+                                userId: userSession.user.id,
                                 startIndex: startIndex >= 0 ? startIndex : undefined,
                                 endIndex: endIndex >= 0 ? endIndex : undefined
                             }),
@@ -416,7 +416,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
         };
         document.addEventListener('mouseup', handleMouseUp);
         return () => document.removeEventListener('mouseup', handleMouseUp);
-    }, [content.paragraphs, contentId, processedText, router]); // Added dependencies to useEffect
+    }, [content.paragraphs, contentId, processedText, router, checkForExistingMatch]);
 
     // Cleanup presence channel on unmount
     useEffect(() => {

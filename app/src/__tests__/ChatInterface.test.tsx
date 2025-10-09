@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/react';
 import ChatInterface from '@/components/ChatInterface';
-import { getSupabaseClient } from '@/lib/supabase';
 
 // Mock Supabase client
 jest.mock('@/lib/supabase', () => ({
