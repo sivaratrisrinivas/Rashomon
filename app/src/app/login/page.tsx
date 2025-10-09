@@ -8,17 +8,24 @@ const LoginPage = () => {
         const supabase = getSupabaseClient();
         const redirectUrl = `${window.location.origin}/auth/callback`;
 
-        // DEBUG: Log env vars and redirect URL
-        console.log('[LOGIN DEBUG] window.location.origin:', window.location.origin);
-        console.log('[LOGIN DEBUG] redirectTo:', redirectUrl);
-        console.log('[LOGIN DEBUG] window.__RASHOMON_ENV__:', (window as typeof window & { __RASHOMON_ENV__?: unknown }).__RASHOMON_ENV__);
-
-        await supabase.auth.signInWithOAuth({
+        // COMPREHENSIVE DEBUG LOGGING
+        console.log('🔍 [LOGIN DEBUG] === OAuth Initialization ===');
+        console.log('🌐 [LOGIN DEBUG] window.location.href:', window.location.href);
+        console.log('🌐 [LOGIN DEBUG] window.location.origin:', window.location.origin);
+        console.log('🌐 [LOGIN DEBUG] window.location.hostname:', window.location.hostname);
+        console.log('🔗 [LOGIN DEBUG] Computed redirectTo:', redirectUrl);
+        console.log('⚙️  [LOGIN DEBUG] NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+        console.log('⚙️  [LOGIN DEBUG] Runtime env:', (window as typeof window & { __RASHOMON_ENV__?: unknown }).__RASHOMON_ENV__);
+        
+        const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: redirectUrl,
             },
         });
+
+        console.log('📤 [LOGIN DEBUG] Supabase OAuth response:', { data, error });
+        console.log('📤 [LOGIN DEBUG] OAuth URL being redirected to:', data?.url);
     };
 
     return (
