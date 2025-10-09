@@ -18,19 +18,23 @@ export async function GET(request: NextRequest) {
   if (code) {
     const cookieStore = await cookies();
     const { supabaseUrl, supabaseAnonKey } = getServerRuntimeEnv();
+    
     const supabase = createServerClient(
       supabaseUrl,
       supabaseAnonKey,
       {
         cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
+          getAll() {
+            return cookieStore.getAll();
           },
-          set(name: string, value: string, options: Record<string, unknown>) {
-            cookieStore.set(name, value, options);
-          },
-          remove(name: string, options: Record<string, unknown>) {
-            cookieStore.set(name, '', options);
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // Ignore - happens in middleware
+            }
           },
         },
       }
@@ -57,6 +61,8 @@ export async function GET(request: NextRequest) {
         // Redirect to dashboard or home if profile is complete
         return NextResponse.redirect(`${origin}${next}`);
       }
+    } else {
+      console.error('[CALLBACK ERROR]', error);
     }
   }
 

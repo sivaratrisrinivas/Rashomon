@@ -9,21 +9,16 @@ export const createSupabaseServerClient = async () => {
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value;
+      getAll() {
+        return cookieStore.getAll();
       },
-      set(name: string, value: string, options: Record<string, unknown>) {
+      setAll(cookiesToSet) {
         try {
-          cookieStore.set(name, value, options);
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
         } catch {
           // Silently handle cookie setting errors
-        }
-      },
-      remove(name: string, options: Record<string, unknown>) {
-        try {
-          cookieStore.set(name, '', options);
-        } catch {
-          // Silently handle cookie removal errors
         }
       },
     },
