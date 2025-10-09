@@ -3,6 +3,8 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { getServerRuntimeEnv, serializeRuntimeEnv } from '@/lib/runtime-env';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Rashomon',
   description: 'Reading and Discussion Platform',

@@ -3,6 +3,8 @@
 import { Button } from '@/components/ui/button';
 import { getSupabaseClient } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 const LoginPage = () => {
     const signInWithGoogle = async () => {
         const supabase = getSupabaseClient();
