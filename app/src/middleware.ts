@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getServerRuntimeEnv } from '@/lib/runtime-env';
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
+  const response = NextResponse.next({
     request: {
       headers: request.headers,
     },
