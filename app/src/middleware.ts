@@ -11,6 +11,14 @@ export async function middleware(request: NextRequest) {
 
   const { supabaseUrl, supabaseAnonKey } = getServerRuntimeEnv();
 
+  // Public routes that don't need authentication - check FIRST before any auth calls
+  const publicRoutes = ['/login', '/onboarding', '/auth/callback'];
+  const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
+
+  if (isPublicRoute) {
+    return response;
+  }
+
   const supabase = createServerClient(
     supabaseUrl,
     supabaseAnonKey,
@@ -29,16 +37,8 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refresh session on every request (required for PKCE flow)
+  // Refresh session ONLY for protected routes (not public/callback routes)
   await supabase.auth.getUser();
-
-  // Public routes that don't need authentication
-  const publicRoutes = ['/login', '/onboarding', '/auth/callback'];
-  const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
-
-  if (isPublicRoute) {
-    return response;
-  }
 
   // Check auth for protected routes
   // Get actual public URL from proxy headers
