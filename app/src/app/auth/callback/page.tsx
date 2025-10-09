@@ -17,8 +17,18 @@ export default function AuthCallbackPage() {
                 const { supabaseUrl, supabaseAnonKey } = getBrowserRuntimeEnv();
                 const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
-                // exchangeCodeForSession will automatically handle PKCE from browser storage
-                const { data, error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+                // Get code from URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const code = urlParams.get('code');
+
+                console.log('[CLIENT CALLBACK] Code from URL:', code);
+
+                if (!code) {
+                    throw new Error('No auth code in URL');
+                }
+
+                // exchangeCodeForSession will automatically get PKCE verifier from storage
+                const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
                 if (error) {
                     console.error('[CLIENT CALLBACK ERROR]', error);
