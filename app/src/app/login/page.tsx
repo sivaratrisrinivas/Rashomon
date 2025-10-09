@@ -16,10 +16,10 @@ const LoginPage = () => {
         console.log('🔗 [LOGIN DEBUG] Computed redirectTo:', redirectUrl);
         console.log('⚙️  [LOGIN DEBUG] NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
         console.log('⚙️  [LOGIN DEBUG] Runtime env:', (window as typeof window & { __RASHOMON_ENV__?: unknown }).__RASHOMON_ENV__);
-        
+
         // Force skipBrowserRedirect to check if popup is the issue
         console.log('🧪 [LOGIN DEBUG] Testing with skipBrowserRedirect: false (same-window redirect)');
-        
+
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
@@ -30,7 +30,7 @@ const LoginPage = () => {
 
         console.log('📤 [LOGIN DEBUG] Supabase OAuth response:', { data, error });
         console.log('📤 [LOGIN DEBUG] OAuth URL being redirected to:', data?.url);
-        
+
         if (error) {
             console.error('❌ [LOGIN DEBUG] OAuth error:', error);
         }
