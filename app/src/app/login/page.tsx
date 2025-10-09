@@ -7,12 +7,12 @@ const LoginPage = () => {
     const signInWithGoogle = async () => {
         const supabase = getSupabaseClient();
         const redirectUrl = `${window.location.origin}/auth/callback`;
-        
+
         // DEBUG: Log env vars and redirect URL
         console.log('[LOGIN DEBUG] window.location.origin:', window.location.origin);
         console.log('[LOGIN DEBUG] redirectTo:', redirectUrl);
-        console.log('[LOGIN DEBUG] window.__RASHOMON_ENV__:', (window as any).__RASHOMON_ENV__);
-        
+        console.log('[LOGIN DEBUG] window.__RASHOMON_ENV__:', (window as typeof window & { __RASHOMON_ENV__?: unknown }).__RASHOMON_ENV__);
+
         await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
