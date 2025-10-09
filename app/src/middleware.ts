@@ -12,7 +12,7 @@ export async function middleware(request: NextRequest) {
   const { supabaseUrl, supabaseAnonKey } = getServerRuntimeEnv();
 
   // Public routes that don't need authentication - check FIRST before any auth calls
-  const publicRoutes = ['/login', '/onboarding', '/auth/callback'];
+  const publicRoutes = ['/login', '/onboarding', '/auth/callback', '/api/auth'];
   const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
 
   if (isPublicRoute) {
