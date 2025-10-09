@@ -66,14 +66,17 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check auth for protected routes
+  // Get actual public URL from proxy headers
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
+  const proto = request.headers.get('x-forwarded-proto') || 'https';
+  const origin = `${proto}://${host}`;
+
   try {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
       // Redirect to login if no session
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = '/login';
-      return NextResponse.redirect(redirectUrl);
+      return NextResponse.redirect(`${origin}/login`);
     }
 
     // Check if user has completed onboarding
@@ -85,16 +88,12 @@ export async function middleware(request: NextRequest) {
 
     if (!profile?.reading_preferences || profile.reading_preferences.length === 0) {
       // Redirect to onboarding if preferences not set
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = '/onboarding';
-      return NextResponse.redirect(redirectUrl);
+      return NextResponse.redirect(`${origin}/onboarding`);
     }
 
   } catch {
     // On auth errors, redirect to login
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = '/login';
-    return NextResponse.redirect(redirectUrl);
+    return NextResponse.redirect(`${origin}/login`);
   }
 
   return response;
