@@ -58,5 +58,8 @@ Push to `main` branch to trigger auto-deployment, or use Render dashboard "Manua
 
 **Environment variables not working?**
 - Next.js requires `NEXT_PUBLIC_` prefix for client-side vars
-- After changing env vars, trigger a manual redeploy
+- **CRITICAL**: `NEXT_PUBLIC_*` vars must be set BEFORE deploying (not after)
+- These vars are baked into the build at build-time, not runtime
+- After setting/changing env vars, you MUST trigger a new deploy (not just restart)
+- Verify all three frontend env vars are set: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_API_URL`
 
