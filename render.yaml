@@ -28,5 +28,5 @@ services:
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: NEXT_PUBLIC_API_URL
-        value: https://rashomon-api.onrender.com
+        value: https://rashomon.onrender.com
     healthCheckPath: /
