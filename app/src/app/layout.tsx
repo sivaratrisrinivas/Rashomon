@@ -17,7 +17,7 @@ export default async function RootLayout({
 }) {
   const runtimeEnv = getServerRuntimeEnv();
   const serialized = serializeRuntimeEnv(runtimeEnv);
-  
+
   // DEBUG: Server-side logging
   console.log('[LAYOUT DEBUG] Server runtime env:', runtimeEnv);
   console.log('[LAYOUT DEBUG] Serialized for browser:', serialized);
