@@ -135,10 +135,10 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
     useEffect(() => {
         const fetchSessionsAndUser = async () => {
             const supabase = getSupabaseClient();
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { user } } = await supabase.auth.getUser();
 
-            if (session) {
-                setCurrentUserId(session.user.id);
+            if (user) {
+                setCurrentUserId(user.id);
             }
 
             // Fetch past sessions
@@ -239,8 +239,8 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
     // Check for existing matches when text is selected
     const checkForExistingMatch = async (selectedText: string, paragraphIndex: number, startIdx?: number, endIdx?: number) => {
         const supabase = getSupabaseClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return false;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return false;
 
         const channelName = `content:${contentId}`;
 
@@ -248,7 +248,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
         const tempChannel = supabase.channel(channelName, {
             config: {
                 presence: {
-                    key: `temp-${session.user.id}-${Date.now()}`
+                    key: `temp-${user.id}-${Date.now()}`
                 }
             }
         });
@@ -260,7 +260,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                     if (resolved) return;
 
                     const presenceState = tempChannel.presenceState();
-                    const currentUserId = session.user.id;
+                    const currentUserId = user.id;
 
                     // Get all presence entries with their paragraph and position info
                     const allPresences: Array<{
@@ -384,8 +384,8 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                 if (hasMatch) {
                     // Save highlight before navigating
                     const supabase = getSupabaseClient();
-                    const { data: { session: userSession } } = await supabase.auth.getSession();
-                    if (userSession) {
+                    const { data: { user: userAuth } } = await supabase.auth.getUser();
+                    if (userAuth) {
                         await fetch(`${getApiUrl()}/highlights`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -393,7 +393,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                                 contentId,
                                 text: sel,
                                 context: processedText.substring(0, 100),
-                                userId: userSession.user.id,
+                                userId: userAuth.id,
                                 startIndex: startIndex >= 0 ? startIndex : undefined,
                                 endIndex: endIndex >= 0 ? endIndex : undefined
                             }),
@@ -444,13 +444,13 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
         }
 
         const supabase = getSupabaseClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-            console.log('❌ [DISCUSS] No session found');
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            console.log('❌ [DISCUSS] No user found');
             return;
         }
-        console.log('✅ [DISCUSS] User authenticated:', session.user.id);
-        console.log('🔍 [DISCUSS DEBUG] User email (for identification):', session.user.email);
+        console.log('✅ [DISCUSS] User authenticated:', user.id);
+        console.log('🔍 [DISCUSS DEBUG] User email (for identification):', user.email);
 
         // Save highlight
         console.log('💬 [DISCUSS] Saving highlight...');
@@ -458,7 +458,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
             contentId,
             text: selection,
             context: processedText.substring(0, 100),
-            userId: session.user.id,
+            userId: user.id,
             startIndex: selectionStartIndex >= 0 ? selectionStartIndex : undefined,
             endIndex: selectionEndIndex >= 0 ? selectionEndIndex : undefined
         };
@@ -496,7 +496,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                 console.log('💬 [DISCUSS] Channel subscription status:', status);
                 if (status === 'SUBSCRIBED') {
                     const trackData = {
-                        userId: session.user.id,
+                        userId: user.id,
                         selectedText: selection,
                         paragraphIndex: selectedParagraphIndex,
                         startIndex: selectionStartIndex,

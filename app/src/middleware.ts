@@ -67,9 +67,9 @@ export async function middleware(request: NextRequest) {
 
   // Check auth for protected routes
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { user } } = await supabase.auth.getUser();
     
-    if (!session) {
+    if (!user) {
       // Redirect to login if no session
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = '/login';
@@ -80,7 +80,7 @@ export async function middleware(request: NextRequest) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('reading_preferences')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single();
 
     if (!profile?.reading_preferences || profile.reading_preferences.length === 0) {

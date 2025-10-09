@@ -100,19 +100,19 @@ export default function ChatPage({ params }: ChatPageProps) {
                 return;
             }
 
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { user } } = await supabase.auth.getUser();
             if (!isActive) {
-                console.log('⏹️  [CHAT SETUP] Aborting setup run #', runId, 'after session fetch (stale effect)');
+                console.log('⏹️  [CHAT SETUP] Aborting setup run #', runId, 'after user fetch (stale effect)');
                 return;
             }
-            if (!session) {
-                console.log('❌ [CHAT SETUP] No session found, redirecting to login');
+            if (!user) {
+                console.log('❌ [CHAT SETUP] No user found, redirecting to login');
                 router.push('/login');
                 return;
             }
-            const localUserId = session.user.id;
+            const localUserId = user.id;
             console.log('✅ [CHAT SETUP] User authenticated:', localUserId);
-            console.log('🔍 [CHAT SETUP DEBUG] User email (for identification):', session.user.email);
+            console.log('🔍 [CHAT SETUP DEBUG] User email (for identification):', user.email);
             setCurrentUserId(localUserId);
 
             // --- Chat Channel (create first so presence can reference it) ---

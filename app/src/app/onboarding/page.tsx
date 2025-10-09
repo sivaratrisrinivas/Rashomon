@@ -17,14 +17,14 @@ const OnboardingPage = () => {
 
     const handleSubmit = async () => {
         const supabase = getSupabaseClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
         const response = await fetch(`${getBrowserRuntimeEnv().apiUrl}/api/profile`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                userId: session.user.id,
+                userId: user.id,
                 reading_preferences: selectedPreferences
             }),
         });

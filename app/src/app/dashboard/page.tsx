@@ -23,13 +23,13 @@ const DashboardPage = () => {
 
         setIsUrlProcessing(true);
         try {
-            const { data: { session } } = await getSupabaseClient().auth.getSession();
-            if (!session) return;
+            const { data: { user } } = await getSupabaseClient().auth.getUser();
+            if (!user) return;
 
             const response = await fetch(`${getBrowserRuntimeEnv().apiUrl}/content/url`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url, userId: session.user.id }),
+                body: JSON.stringify({ url, userId: user.id }),
             });
 
             const { contentId, isExisting } = await response.json();
@@ -51,14 +51,14 @@ const DashboardPage = () => {
 
         setIsFileProcessing(true);
         try {
-            const { data: { session } } = await getSupabaseClient().auth.getSession();
-            if (!session) {
-                console.error('No session found');
+            const { data: { user } } = await getSupabaseClient().auth.getUser();
+            if (!user) {
+                console.error('No user found');
                 return;
             }
 
             console.log('Uploading file to storage...');
-            const filePath = `${session.user.id}/${Date.now()}-${file.name}`;
+            const filePath = `${user.id}/${Date.now()}-${file.name}`;
             const { error: uploadError } = await getSupabaseClient().storage.from('uploads').upload(filePath, file);
 
             if (uploadError) {
@@ -71,7 +71,7 @@ const DashboardPage = () => {
             const response = await fetch(`${getBrowserRuntimeEnv().apiUrl}/content/upload`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ filePath, userId: session.user.id }),
+                body: JSON.stringify({ filePath, userId: user.id }),
             });
 
             const result = await response.json();

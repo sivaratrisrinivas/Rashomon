@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 
 export default async function Home() {
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
   return (
     <div className="flex items-center justify-center min-h-screen relative">
