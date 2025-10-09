@@ -1,9 +1,9 @@
 import { createBrowserClient } from '@supabase/ssr';
+import { getBrowserRuntimeEnv } from './runtime-env';
 
 // Client-side Supabase client (for components that run in the browser)
 export const getSupabaseClient = () => {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const { supabaseUrl, supabaseAnonKey } = getBrowserRuntimeEnv();
+
+  return createBrowserClient(supabaseUrl, supabaseAnonKey);
 };

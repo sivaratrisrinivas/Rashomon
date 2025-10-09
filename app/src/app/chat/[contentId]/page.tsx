@@ -4,11 +4,12 @@ import { use, useEffect, useState, useRef } from 'react'; // Import useRef
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getSupabaseClient } from '@/lib/supabase';
+import { getBrowserRuntimeEnv } from '@/lib/runtime-env';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const getApiUrl = () => getBrowserRuntimeEnv().apiUrl;
 
 type ChatPageProps = { params: Promise<{ contentId: string }> };
 
@@ -386,7 +387,7 @@ export default function ChatPage({ params }: ChatPageProps) {
 
             console.log('🔍 [SEND DEBUG] Full message payload:', messagePayload);
 
-            const response = await fetch(`${API_URL}/messages`, {
+            const response = await fetch(`${getApiUrl()}/messages`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(messagePayload),

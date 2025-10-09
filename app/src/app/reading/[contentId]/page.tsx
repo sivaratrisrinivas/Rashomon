@@ -6,6 +6,7 @@ import { use, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { getSupabaseClient } from '@/lib/supabase';
+import { getBrowserRuntimeEnv } from '@/lib/runtime-env';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -28,7 +29,7 @@ interface ChatSession {
 }
 
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const getApiUrl = () => getBrowserRuntimeEnv().apiUrl;
 
 type ReadingPageProps = { params: Promise<{ contentId: string }> };
 
@@ -142,7 +143,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
 
             // Fetch past sessions
             try {
-                const response = await fetch(`${API_URL}/content/${contentId}/sessions`);
+                const response = await fetch(`${getApiUrl()}/content/${contentId}/sessions`);
                 if (response.ok) {
                     const data = await response.json();
                     setPastSessions(data.sessions || []);
@@ -385,7 +386,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                     const supabase = getSupabaseClient();
                     const { data: { session: userSession } } = await supabase.auth.getSession();
                     if (userSession) {
-                        await fetch(`${API_URL}/highlights`, {
+                        await fetch(`${getApiUrl()}/highlights`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -463,7 +464,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
         };
         console.log('🔍 [DISCUSS DEBUG] Highlight request body:', JSON.stringify(highlightPayload, null, 2));
 
-        const response = await fetch(`${API_URL}/highlights`, {
+        const response = await fetch(`${getApiUrl()}/highlights`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(highlightPayload),

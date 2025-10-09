@@ -25,13 +25,17 @@ Both backend API and frontend Next.js app are configured to deploy on Render usi
    - `SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key
    - `GOOGLE_CLOUD_VISION_API_KEY`: Your Google Cloud Vision API key
    
-   **For `rashomon-frontend`**:
+   **For `rashomon-frontend`** (CRITICAL - follow exactly):
+   
+   a. Go to Environment tab, add:
    - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anon/public key
    - `SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key
-   - `NEXT_PUBLIC_API_URL`: Auto-set to `https://rashomon-api.onrender.com` (update if needed)
+   - `NEXT_PUBLIC_API_URL`: `https://rashomon-api.onrender.com` (or your actual backend URL)
+   
+   b. **Docker build args are no longer required** thanks to runtime env injection (see below). Simply save env vars and redeploy.
 
-4. **Deploy**: Render will automatically build and deploy both services.
+4. **Deploy**: Trigger a manual deploy to build with the new configuration.
 
 ## Service URLs
 - **Frontend**: `https://rashomon-frontend.onrender.com`
@@ -57,9 +61,6 @@ Push to `main` branch to trigger auto-deployment, or use Render dashboard "Manua
 - Check CORS settings in backend if needed
 
 **Environment variables not working?**
-- Next.js requires `NEXT_PUBLIC_` prefix for client-side vars
-- **CRITICAL**: `NEXT_PUBLIC_*` vars must be set BEFORE deploying (not after)
-- These vars are baked into the build at build-time, not runtime
-- After setting/changing env vars, you MUST trigger a new deploy (not just restart)
-- Verify all three frontend env vars are set: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_API_URL`
+- Env values are now injected at runtime; make sure the four vars above are set in Render
+- After changing env vars, trigger a manual redeploy so the runtime script receives the latest values
 

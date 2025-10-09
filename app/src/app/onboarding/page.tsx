@@ -7,8 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { getSupabaseClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { getBrowserRuntimeEnv } from '@/lib/runtime-env';
 
 const preferencesOptions = ['fiction', 'non-fiction', 'mystery', 'science', 'history']; // Example options
 
@@ -21,7 +20,7 @@ const OnboardingPage = () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
 
-        const response = await fetch(`${API_URL}/api/profile`, {
+        const response = await fetch(`${getBrowserRuntimeEnv().apiUrl}/api/profile`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
