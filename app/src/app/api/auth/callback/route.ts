@@ -32,6 +32,9 @@ export async function GET(request: Request) {
     },
   });
 
+  console.log('[CALLBACK] Exchange attempt - code:', code.substring(0, 20) + '...');
+  console.log('[CALLBACK] Available cookies:', cookieStore.getAll().map(c => c.name).join(', '));
+
   // Exchange code for session (server-side, PKCE code verifier from cookie)
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
