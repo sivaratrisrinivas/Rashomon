@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "bun --hot index.ts",
-    "build": "bun build index.ts --outdir ./dist --target bun",
+    "build": "echo 'No build step needed - running TypeScript directly with Bun'",
     "start": "bun run index.ts",
     "start:prod": "NODE_ENV=production bun run index.ts",
     "test": "bun test",
