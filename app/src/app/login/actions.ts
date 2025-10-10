@@ -15,6 +15,7 @@ export async function signInWithGoogle() {
   const host = headersList.get('x-forwarded-host') || headersList.get('host');
   const proto = headersList.get('x-forwarded-proto') || 'https';
   const origin = `${proto}://${host}`;
+  const publicDomain = (host || '').split(':')[0] || undefined;
   
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -30,6 +31,7 @@ export async function signInWithGoogle() {
               sameSite: 'lax' as const,
               secure: proto === 'https',
               path: '/',
+              domain: publicDomain,
               httpOnly: name.includes('code-verifier'), // PKCE verifier should be httpOnly
             };
             cookieStore.set(name, value, cookieOptions);
