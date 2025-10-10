@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 const LoginPage = () => {
     const signInWithGoogle = async () => {
         const supabase = getSupabaseClient();
-        const redirectUrl = `${window.location.origin}/auth/callback`;
+        const redirectUrl = `${window.location.origin}/api/auth/callback`;
 
         // COMPREHENSIVE DEBUG LOGGING
         console.log('🔍 [LOGIN DEBUG] === OAuth Initialization ===');
