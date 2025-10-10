@@ -5,6 +5,8 @@ import * as cheerio from 'cheerio';
 import { ImageAnnotatorClient } from '@google-cloud/vision';
 // crypto is no longer needed for hashing highlights, but we keep it for other potential uses
 import { createHash } from 'crypto';
+import { loggingMiddleware } from './middleware/logging';
+import { rateLimitMiddleware } from './middleware/rate-limit';
 
 // dotenv only needed for local dev - production uses platform env vars
 if (process.env.NODE_ENV !== 'production') {
@@ -57,12 +59,54 @@ const sanitizeStructuredContent = (input: StructuredContent | null | undefined) 
 };
 
 const app = new Elysia()
-  .use(cors())
+  .use(cors({
+    origin: [
+      'http://localhost:3000',
+      'https://localhost:3000',
+      /^https:\/\/.*\.railway\.app$/,
+      /^https:\/\/.*\.vercel\.app$/,
+      /^https:\/\/.*\.onrender\.com$/,
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-ID'],
+  }))
+  .use(loggingMiddleware)
+  .use(rateLimitMiddleware)
   .onError(({ error, set }) => {
     set.headers['content-type'] = 'application/json';
     return { error: error instanceof Error ? error.message : String(error) };
   })
   .get('/', () => ({ status: 'ok' }))
+  .get('/health', async () => {
+    try {
+      // Test database connectivity
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      const { data, error } = await supabase.from('profiles').select('count').limit(1);
+      
+      if (error) {
+        return { 
+          status: 'unhealthy', 
+          database: 'disconnected',
+          error: error.message,
+          timestamp: new Date().toISOString()
+        };
+      }
+      
+      return { 
+        status: 'healthy', 
+        database: 'connected',
+        timestamp: new Date().toISOString()
+      };
+    } catch (err) {
+      return { 
+        status: 'unhealthy', 
+        database: 'error',
+        error: (err as Error).message,
+        timestamp: new Date().toISOString()
+      };
+    }
+  })
   .put('/api/profile', async ({ body, set }: { body: any, set: any }) => {
     const { userId, reading_preferences } = body as { userId: string, reading_preferences: string[] };
     try {
@@ -913,3 +957,24 @@ const app = new Elysia()
   .listen(process.env.PORT || 3001);
 
 console.log(`Server running at ${app.server?.hostname}:${app.server?.port}`);
+
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});

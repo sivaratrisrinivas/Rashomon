@@ -9,7 +9,11 @@
   },
   "scripts": {
     "dev": "bun --hot index.ts",
-    "test": "bun test"
+    "start": "bun run index.ts",
+    "start:prod": "NODE_ENV=production bun run index.ts",
+    "test": "bun test",
+    "test:unit": "bun test",
+    "test:integration": "bun run tests/realtime.test.ts"
   },
   "peerDependencies": {
     "typescript": "^5"

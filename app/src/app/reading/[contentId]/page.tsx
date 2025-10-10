@@ -132,7 +132,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
     // Perspective Replay state
     const [replayMode, setReplayMode] = useState(false);
     const [pastSessions, setPastSessions] = useState<ChatSession[]>([]);
-    const [selectedSession, setSelectedSession] = useState<ChatSession | null>(null);
+    const [selectedSession, setSelectedSession] = useState<ChatSession[]>([]);
     const [replayDialogOpen, setReplayDialogOpen] = useState(false);
     const [currentUserId, setCurrentUserId] = useState<string>('');
 
@@ -655,7 +655,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                                     {hasDiscussions && (
                                         <button
                                             onClick={() => {
-                                                setSelectedSession(relevantSessions[0]);
+                                                setSelectedSession(relevantSessions);
                                                 setReplayDialogOpen(true);
                                             }}
                                             className="absolute -right-8 top-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[11px] text-orange-700 hover:text-orange-800 flex items-center gap-1"
@@ -702,7 +702,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
             <PerspectiveReplay
                 open={replayDialogOpen}
                 onOpenChange={setReplayDialogOpen}
-                session={selectedSession}
+                sessions={selectedSession}
                 currentUserId={currentUserId}
             />
 

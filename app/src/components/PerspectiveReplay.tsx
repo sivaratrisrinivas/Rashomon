@@ -5,6 +5,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
+import { useState } from 'react';
 
 interface Message {
     userId: string;
@@ -12,28 +13,33 @@ interface Message {
     timestamp: string;
 }
 
+interface ChatSession {
+    id: string;
+    highlightedText: string | null;
+    transcript: Message[];
+    participantCount: number;
+    createdAt: string;
+}
+
 interface PerspectiveReplayProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    session: {
-        id: string;
-        highlightedText: string | null;
-        transcript: Message[];
-        participantCount: number;
-        createdAt: string;
-    } | null;
+    sessions: ChatSession[];
     currentUserId?: string;
 }
 
 export function PerspectiveReplay({
     open,
     onOpenChange,
-    session,
+    sessions,
     currentUserId,
 }: PerspectiveReplayProps) {
-    if (!session) return null;
+    const [selectedSessionIndex, setSelectedSessionIndex] = useState(0);
 
-    const timeAgo = formatDistanceToNow(new Date(session.createdAt), { addSuffix: true });
+    if (!sessions || sessions.length === 0) return null;
+
+    const selectedSession = sessions[selectedSessionIndex];
+    const timeAgo = formatDistanceToNow(new Date(selectedSession.createdAt), { addSuffix: true });
 
     const formatTime = (timestamp: string) => {
         const date = new Date(timestamp);
@@ -49,15 +55,33 @@ export function PerspectiveReplay({
             <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col glass border-border/50">
                 <DialogHeader>
                     <DialogTitle className="text-[16px] font-light tracking-wide">
-                        {session.participantCount} {session.participantCount === 1 ? 'reader' : 'readers'} discussed this {timeAgo}
+                        {selectedSession.participantCount} {selectedSession.participantCount === 1 ? 'reader' : 'readers'} discussed this {timeAgo}
                     </DialogTitle>
                 </DialogHeader>
 
+                {/* Session selector if multiple sessions */}
+                {sessions.length > 1 && (
+                    <div className="flex gap-2 mb-4">
+                        {sessions.map((session, index) => (
+                            <button
+                                key={session.id}
+                                onClick={() => setSelectedSessionIndex(index)}
+                                className={`px-3 py-1 text-xs rounded-full transition-colors ${index === selectedSessionIndex
+                                        ? 'bg-orange-700/20 text-orange-700 border border-orange-700/30'
+                                        : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                                    }`}
+                            >
+                                Discussion {index + 1}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
                 {/* Highlighted text context */}
-                {session.highlightedText && (
+                {selectedSession.highlightedText && (
                     <div className="border-l-2 border-orange-700/30 pl-4 py-2 mb-4">
                         <p className="text-[13px] text-muted-foreground/80 italic font-light leading-relaxed">
-                            &ldquo;{session.highlightedText}&rdquo;
+                            &ldquo;{selectedSession.highlightedText}&rdquo;
                         </p>
                     </div>
                 )}
@@ -67,14 +91,14 @@ export function PerspectiveReplay({
 
                 {/* Transcript */}
                 <div className="flex-1 overflow-y-auto space-y-4 py-6 px-1">
-                    {session.transcript.length === 0 ? (
+                    {selectedSession.transcript.length === 0 ? (
                         <div className="flex items-center justify-center h-32">
                             <p className="text-[13px] text-muted-foreground/70 font-light">
                                 No messages in this session
                             </p>
                         </div>
                     ) : (
-                        session.transcript.map((msg, idx) => {
+                        selectedSession.transcript.map((msg, idx) => {
                             const isCurrentUser = currentUserId && msg.userId === currentUserId;
                             return (
                                 <div key={idx} className="space-y-1">

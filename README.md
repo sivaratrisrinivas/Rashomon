@@ -274,109 +274,107 @@ We test at multiple levels:
 
 ## Deployment
 
-Ready to deploy Rashomon to production? Here's how to get both the frontend and backend live.
+Ready to deploy Rashomon to production? Railway provides a unified platform for both frontend and backend with excellent developer experience.
 
 ### Prerequisites
 
-- GitHub account (for CI/CD and Render deployment)
-- Vercel account (for frontend hosting)
-- Render account (for backend hosting - **no credit card required**)
-- Environment variables from development setup
+- GitHub account (for CI/CD)
+- Railway account (sign up at [railway.app](https://railway.app) - **no credit card required**)
+- Supabase project (for database and auth)
+- Google Cloud account (for Vision API)
 
-### Deploy Backend to Render
+### Quick Deploy to Railway
 
 1. **Push code to GitHub** (if not already)
    ```bash
    git add .
-   git commit -m "Add deployment config"
+   git commit -m "Configure Railway deployment"
    git push origin main
    ```
 
-2. **Go to Render Dashboard**
-   - Visit [render.com](https://render.com)
-   - Sign up/login with GitHub (no credit card needed)
+2. **Deploy to Railway**
+   - Go to [railway.app](https://railway.app)
+   - Sign up/login with GitHub
+   - Click "New Project" → "Deploy from GitHub repo"
+   - Select your `Rashomon` repository
+   - Railway auto-detects both services from the monorepo
 
-3. **Create New Web Service**
-   - Click "New +" → "Web Service"
-   - Connect your GitHub repo
-   - Render auto-detects `render.yaml` config
+3. **Configure Environment Variables**
 
-4. **Set Environment Variables**
-   In the Render dashboard:
-   - `SUPABASE_URL` → your Supabase project URL
-   - `SUPABASE_SERVICE_ROLE_KEY` → from Supabase Settings → API
-   - `GOOGLE_CLOUD_VISION_API_KEY` → from Google Cloud Console
-
-5. **Deploy**
-   - Click "Create Web Service"
-   - Wait 2-3 minutes for build
-   
-   Your API URL will be: `https://rashomon-api.onrender.com` (or similar)
-
-### Deploy Frontend to Vercel
-
-1. **Push to GitHub** (if not already)
-   ```bash
-   git add .
-   git commit -m "Ready for deployment"
-   git push origin main
+   **Backend Service:**
+   ```
+   SUPABASE_URL=your-supabase-project-url
+   SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+   GOOGLE_CLOUD_VISION_API_KEY=your-google-cloud-vision-api-key
    ```
 
-2. **Connect to Vercel**
-   - Go to [vercel.com](https://vercel.com)
-   - Click "New Project"
-   - Import your GitHub repository
-   - Select "app" as the root directory
-
-3. **Configure environment variables** in Vercel dashboard:
+   **Frontend Service:**
    ```
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-   NEXT_PUBLIC_API_URL=https://your-api.onrender.com
+   NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+   NEXT_PUBLIC_API_URL=https://your-backend-service.railway.app
    ```
 
 4. **Deploy**
-   Vercel auto-deploys on every push to main.
+   - Click "Deploy" for each service
+   - Wait for builds to complete (2-3 minutes each)
 
-5. **Update Supabase redirect URLs**
+5. **Update Supabase Auth**
    - Go to Supabase Dashboard → Authentication → URL Configuration
-   - Add your Vercel domain to Redirect URLs
+   - Add your Railway frontend URL to Redirect URLs
+
+### Railway Advantages
+
+- **Unified platform**: Both services in one dashboard
+- **Better free tier**: $5/month credit (vs Render's sleep after 15min)
+- **Auto-scaling**: Handles traffic spikes automatically
+- **Preview environments**: Auto-deploy PRs for testing
+- **Better DX**: Simpler config, faster deploys
+- **Built-in monitoring**: Metrics, logs, alerts included
+- **No cold starts**: Services stay warm on free tier
 
 ### CI/CD Pipeline
 
-GitHub Actions automatically runs tests on every push. Workflow includes:
-- Backend unit tests
-- Frontend unit tests  
-- E2E tests with Cypress
-- Deployment gate (only proceed if tests pass)
+GitHub Actions automatically:
+- Runs tests on every push/PR
+- Deploys to staging on PRs
+- Deploys to production on merge to main
+- Performs health checks after deployment
 
 Add these secrets to your GitHub repository (Settings → Secrets):
 ```
-SUPABASE_URL
-SUPABASE_SERVICE_ROLE_KEY
-GOOGLE_CLOUD_VISION_API_KEY
-NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY
-NEXT_PUBLIC_API_URL
+RAILWAY_TOKEN=your-railway-auth-token
+RAILWAY_PROJECT_ID=your-railway-project-id
+SUPABASE_URL=your-supabase-project-url
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+GOOGLE_CLOUD_VISION_API_KEY=your-google-cloud-vision-api-key
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+NEXT_PUBLIC_API_URL=https://your-backend-service.railway.app
 ```
+
+### Health Checks
+
+- **Backend**: `https://your-backend.railway.app/health`
+- **Frontend**: `https://your-frontend.railway.app/api/health`
 
 ### Troubleshooting
 
-**Backend won't start on Render**
-- Check logs in Render dashboard
-- Verify environment variables are set correctly
-
-**Backend is slow to respond**
-- Free tier sleeps after 15min inactivity
-- First request after sleep takes ~30s (cold start)
+**Backend won't start**
+- Check environment variables in Railway dashboard
+- Verify Supabase credentials
+- Check logs: `railway logs --service backend`
 
 **Frontend can't reach backend**
-- Confirm `NEXT_PUBLIC_API_URL` matches Render URL
-- Check CORS settings in backend
+- Verify `NEXT_PUBLIC_API_URL` is set correctly
+- Check CORS configuration
+- Ensure backend is running and healthy
 
 **Auth redirect fails**
-- Ensure Vercel domain is in Supabase redirect URLs
-- Check auth callback route exists at `/auth/callback`
+- Update Supabase redirect URLs with Railway domain
+- Check auth callback route exists
+
+For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ---
 

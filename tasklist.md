@@ -253,42 +253,58 @@ This phase leverages **Supabase Realtime** instead of a custom WebSocket server.
 
 ***
 
-## Phase 7: Deployment & Finalization (Going Live) 🚀
+## Phase 7: Railway Production Deployment (Going Live) 🚀
 - [ ] **Phase 7 Complete**
 
-### Task 7.1: Final Testing and Deployment
-- [ ] **Task 7.1 Complete**
-- [x] 1.  **Deployment Configuration**:
-    - [x] Created `Dockerfile` for Bun/Elysia backend
-    - [x] Created `render.yaml` for Render deployment (no credit card needed)
-    - [x] Updated all frontend API URLs to use `NEXT_PUBLIC_API_URL` env variable
-    - [x] Created `env.example` file documenting required environment variables
-    - [x] Set up GitHub Actions CI/CD workflow
-    - [x] Updated README with comprehensive deployment instructions
-- [ ] 2.  **Deploy Backend to Render** (no credit card required):
+### Task 7.1: Railway Deployment Configuration
+- [x] **Task 7.1 Complete**
+- [x] 1.  **Railway Configuration**:
+    - [x] Created `railway.toml` for both backend and frontend services
+    - [x] Created `railway.json` for monorepo configuration
+    - [x] Added production health check endpoints (`/health` and `/api/health`)
+    - [x] Configured logging, rate limiting, and error tracking middleware
+    - [x] Optimized Next.js for standalone production deployment with security headers
+    - [x] Created Railway-compatible GitHub Actions CI/CD workflow
+    - [x] Updated CORS configuration for Railway domains
+    - [x] Created comprehensive `env.example` with all required variables
+    - [x] Updated README.md and created detailed DEPLOYMENT.md
+
+### Task 7.2: Deploy to Railway Production
+- [ ] **Task 7.2 Complete**
+- [ ] 1.  **Deploy Backend Service**:
     - [ ] Push code to GitHub
-    - [ ] Sign up at render.com with GitHub
-    - [ ] Create new Web Service from repo (auto-detects render.yaml)
-    - [ ] Set environment variables in Render dashboard
-    - [ ] Deploy and copy the generated URL
-- [ ] 3.  **Deploy Frontend to Vercel**:
-    - [ ] Connect GitHub repository to Vercel
-    - [ ] Configure root directory as `app`
-    - [ ] Add environment variables to Vercel dashboard
-    - [ ] Deploy and verify frontend loads
-    - [ ] Update Supabase auth redirect URLs with Vercel domain
-- [ ] 4.  **Configure CI/CD**:
-    - [ ] Add GitHub secrets for environment variables
+    - [ ] Sign up at railway.app with GitHub
+    - [ ] Create new project from GitHub repository
+    - [ ] Configure backend service environment variables
+    - [ ] Deploy and verify backend health endpoint
+- [ ] 2.  **Deploy Frontend Service**:
+    - [ ] Configure frontend service environment variables
+    - [ ] Deploy and verify frontend health endpoint
+    - [ ] Update Supabase auth redirect URLs with Railway domain
+- [ ] 3.  **Configure CI/CD**:
+    - [ ] Add Railway secrets to GitHub repository
     - [ ] Verify workflow runs on push to main
     - [ ] Ensure tests pass before deployment
+    - [ ] Test staging deployment on PRs
 
-* **Smoke Tests (Manual)**:
+* **Production Smoke Tests (Manual)**:
     - [ ] Sign in with Google on production
     - [ ] Complete onboarding flow
     - [ ] Process content via URL
+    - [ ] Upload file with OCR processing
     - [ ] Highlight text and test matching
     - [ ] Test real-time chat with another user (if available)
+    - [ ] Verify health checks return 200 OK
+    - [ ] Test rate limiting and security headers
+
 * **Success Criteria**:
-    - [ ] The CI/CD pipeline is green (all tests pass).
-    - [ ] The frontend is live on Vercel and the backend is live on Render.
-    - [ ] The application is fully functional in the production environment.
+    - [ ] Both services deploy successfully to Railway
+    - [ ] CI/CD pipeline is green (all tests pass)
+    - [ ] Health checks return 200 OK for both services
+    - [ ] Frontend can reach backend API
+    - [ ] Google OAuth works in production
+    - [ ] Content upload/processing works
+    - [ ] Real-time chat functions correctly
+    - [ ] Application is fully functional in production environment
+    - [ ] Monitoring and logging are working
+    - [ ] Security headers and rate limiting are active
