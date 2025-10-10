@@ -1,7 +1,17 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
 
 export default async function Home() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Redirect authenticated users to dashboard
+  if (user) {
+    redirect('/dashboard');
+  }
+
   return (
     <div className="flex items-center justify-center min-h-screen relative">
       {/* Floating orbs - psychedelic touch */}
@@ -18,12 +28,12 @@ export default async function Home() {
           </p>
         </div>
 
-        <Link href="/dashboard">
+        <Link href="/login">
           <Button
             variant="outline"
             className="h-12 px-8 text-[13px] font-light tracking-wide glass hover:scale-105 transition-all duration-500 hover:shadow-lg hover:shadow-orange-700/10 border-border/50"
           >
-            Continue
+            Get Started
           </Button>
         </Link>
       </div>

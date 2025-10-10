@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Info } from 'lucide-react';
 import { getBrowserRuntimeEnv } from '@/lib/runtime-env';
+import { createClient } from '@/lib/supabase/client';
+import { User } from '@supabase/supabase-js';
 
 const DashboardPage = () => {
     const [url, setUrl] = useState('');
@@ -15,20 +17,32 @@ const DashboardPage = () => {
     const [isFileProcessing, setIsFileProcessing] = useState(false);
     const [isImportExpanded, setIsImportExpanded] = useState(false);
     const [importMode, setImportMode] = useState<'url' | 'file'>('url');
+    const [user, setUser] = useState<User | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
 
+    useEffect(() => {
+        const fetchUser = async () => {
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+            setIsLoading(false);
+        };
+        fetchUser();
+    }, []);
+
     const handleUrlSubmit = async () => {
-        if (!url.trim()) return;
+        if (!url.trim() || !user) return;
 
         setIsUrlProcessing(true);
         try {
-            // TODO: Re-implement with new auth
-            const userId = 'temp-user-id';
-
             const response = await fetch(`${getBrowserRuntimeEnv().apiUrl}/content/url`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url, userId }),
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${(await createClient().auth.getSession()).data.session?.access_token}`
+                },
+                body: JSON.stringify({ url, userId: user.id }),
             });
 
             const { contentId, isExisting } = await response.json();
@@ -46,28 +60,33 @@ const DashboardPage = () => {
     };
 
     const handleFileUpload = async () => {
-        if (!file) return;
+        if (!file || !user) return;
 
         setIsFileProcessing(true);
         try {
-            // TODO: Re-implement with new auth and file upload
-            const userId = 'temp-user-id';
+            // Upload file to Supabase Storage
+            const supabase = createClient();
+            const filePath = `${user.id}/${Date.now()}-${file.name}`;
 
-            console.log('File upload temporarily disabled - need to re-implement with new auth');
-            alert('File upload feature will be re-enabled after auth is rebuilt');
-            return;
+            const { error: uploadError } = await supabase.storage
+                .from('uploads')
+                .upload(filePath, file);
 
-            /*
-            console.log('Uploading file to storage...');
-            const filePath = `${userId}/${Date.now()}-${file.name}`;
-            
+            if (uploadError) {
+                console.error('Upload error:', uploadError);
+                alert('Failed to upload file: ' + uploadError.message);
+                return;
+            }
+
             console.log('File uploaded, processing OCR...');
             const response = await fetch(`${getBrowserRuntimeEnv().apiUrl}/content/upload`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ filePath, userId }),
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${(await createClient().auth.getSession()).data.session?.access_token}`
+                },
+                body: JSON.stringify({ filePath, userId: user.id }),
             });
-            */
 
             const result = await response.json();
 
@@ -88,6 +107,14 @@ const DashboardPage = () => {
             setIsFileProcessing(false);
         }
     };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-[14px] font-light text-muted-foreground">Loading...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen relative">

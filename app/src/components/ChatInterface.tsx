@@ -11,7 +11,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { getSupabaseClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 
 const ChatInterface = ({ roomName }: { roomName: string }) => {
     const [messages, setMessages] = useState<string[]>([]);
@@ -20,7 +20,7 @@ const ChatInterface = ({ roomName }: { roomName: string }) => {
     const [showModal, setShowModal] = useState(false);
 
     useEffect(() => {
-        const supabase = getSupabaseClient();
+        const supabase = createClient();
         const channel = supabase.channel(roomName);
         channel
             .on('broadcast', { event: 'message' }, ({ payload }) => {
@@ -46,7 +46,7 @@ const ChatInterface = ({ roomName }: { roomName: string }) => {
     }, [roomName]);
 
     const sendMessage = async () => {
-        const supabase = getSupabaseClient();
+        const supabase = createClient();
         const channel = supabase.channel(roomName);
         await channel.send({
             type: 'broadcast',

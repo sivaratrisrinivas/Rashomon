@@ -10,7 +10,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PerspectiveReplay } from '@/components/PerspectiveReplay';
 
-// TODO: Re-add Supabase imports after auth rebuild
+import { createClient } from '@/lib/supabase/client';
+import { User } from '@supabase/supabase-js';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface Message {
     userId: string;
@@ -43,9 +45,22 @@ export default function ReadingPage({ params }: ReadingPageProps) {
             // TODO: Re-implement with new auth
             try {
                 const response = await fetch(`${getBrowserRuntimeEnv().apiUrl}/content/${contentId}`);
-                const { content } = await response.json();
-                if (content) {
-                    setProcessedText(content.processed_text);
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        console.error('Content not found');
+                        setLoading(false);
+                        return;
+                    }
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.content) {
+                    setProcessedText(data.content.processed_text);
+                } else {
+                    console.error('Content not found:', data.error || 'Unknown error');
                 }
             } catch (error) {
                 console.error('Failed to fetch content:', error);
@@ -107,7 +122,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
     const router = useRouter();
     const [selection, setSelection] = useState('');
     const [position, setPosition] = useState({ x: 0, y: 0 });
-    // const [presenceChannel, setPresenceChannel] = useState<RealtimeChannel | null>(null); // TODO: Re-enable after auth
+    const [presenceChannel, setPresenceChannel] = useState<RealtimeChannel | null>(null);
     const [selectedParagraphIndex, setSelectedParagraphIndex] = useState<number>(-1);
     const [selectionStartIndex, setSelectionStartIndex] = useState<number>(-1);
     const [selectionEndIndex, setSelectionEndIndex] = useState<number>(-1);
@@ -126,6 +141,16 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
         setIsClient(true);
     }, []);
 
+    // Cleanup presence channel on unmount
+    useEffect(() => {
+        return () => {
+            if (presenceChannel) {
+                console.log('🧹 [CLEANUP] Unsubscribing from presence channel');
+                presenceChannel.unsubscribe();
+            }
+        };
+    }, [presenceChannel]);
+
     // Debug render count
     useEffect(() => {
         console.log('🔄 [RENDER] ClientReadingView rendered for contentId:', contentId);
@@ -134,7 +159,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
     // Fetch current user ID and past sessions
     useEffect(() => {
         const fetchSessionsAndUser = async () => {
-            const supabase = getSupabaseClient();
+            const supabase = createClient();
             const { data: { user } } = await supabase.auth.getUser();
 
             if (user) {
@@ -238,10 +263,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
 
     // Check for existing matches when text is selected
     const checkForExistingMatch = async (selectedText: string, paragraphIndex: number, startIdx?: number, endIdx?: number) => {
-        // TODO: Re-implement with new auth
-        return false; // Temporarily disable matching
-        /*
-        const supabase = getSupabaseClient();
+        const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return false;
 
@@ -418,267 +440,272 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
     }, [presenceChannel]);
     */
 
-        const handleDiscuss = async () => {
-            console.log('💬 [DISCUSS] handleDiscuss called');
-            console.log('💬 [DISCUSS] Selection:', selection);
-            console.log('💬 [DISCUSS] Paragraph index:', selectedParagraphIndex);
-            console.log('📍 [DISCUSS] Position:', { start: selectionStartIndex, end: selectionEndIndex });
-            console.log('🔍 [DISCUSS DEBUG] Current contentId:', contentId);
-            console.log('🔍 [DISCUSS DEBUG] Full URL:', window.location.href);
-            console.log('🔍 [DISCUSS DEBUG] Pathname:', window.location.pathname);
+    const handleDiscuss = async () => {
+        console.log('💬 [DISCUSS] handleDiscuss called');
+        console.log('💬 [DISCUSS] Selection:', selection);
+        console.log('💬 [DISCUSS] Paragraph index:', selectedParagraphIndex);
+        console.log('📍 [DISCUSS] Position:', { start: selectionStartIndex, end: selectionEndIndex });
+        console.log('🔍 [DISCUSS DEBUG] Current contentId:', contentId);
+        console.log('🔍 [DISCUSS DEBUG] Full URL:', window.location.href);
+        console.log('🔍 [DISCUSS DEBUG] Pathname:', window.location.pathname);
 
-            // TODO: Re-implement with new auth
-            const userId = 'temp-user-id';
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            console.error('No user found');
+            return;
+        }
+        const userId = user.id;
 
-            // Save highlight
-            console.log('💬 [DISCUSS] Saving highlight...');
-            const highlightPayload = {
-                contentId,
-                text: selection,
-                context: processedText.substring(0, 100),
-                userId,
-                startIndex: selectionStartIndex >= 0 ? selectionStartIndex : undefined,
-                endIndex: selectionEndIndex >= 0 ? selectionEndIndex : undefined
-            };
-            console.log('🔍 [DISCUSS DEBUG] Highlight request body:', JSON.stringify(highlightPayload, null, 2));
-
-            const response = await fetch(`${getApiUrl()}/highlights`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(highlightPayload),
-            });
-
-            console.log('💬 [DISCUSS] Highlight save response status:', response.status);
-            if (!response.ok) {
-                console.log('❌ [DISCUSS] Failed to save highlight');
-                setSelection('');
-                return;
-            }
-
-            const highlightData = await response.json();
-            console.log('💬 [DISCUSS] Highlight saved:', highlightData);
-            console.log('🔍 [DISCUSS DEBUG] Highlight ID returned:', highlightData.highlightId);
-            console.log('✅ [DISCUSS DEBUG] Will pass highlightId to chat page via URL!');
-
-            // Join Presence channel for matching
-            const channelName = `content:${contentId}`;
-            console.log('💬 [DISCUSS] Joining presence channel:', channelName);
-            console.log('🔍 [DISCUSS DEBUG] If two users have same contentId, they should see each other in:', channelName);
-            const channel = supabase.channel(channelName);
-
-            channel
-                .on('presence', { event: 'sync' }, () => {
-                    console.log('💬 [DISCUSS] Presence sync');
-                })
-                .subscribe(async (status) => {
-                    console.log('💬 [DISCUSS] Channel subscription status:', status);
-                    if (status === 'SUBSCRIBED') {
-                        const trackData = {
-                            userId: user.id,
-                            selectedText: selection,
-                            paragraphIndex: selectedParagraphIndex,
-                            startIndex: selectionStartIndex,
-                            endIndex: selectionEndIndex,
-                            timestamp: new Date().toISOString()
-                        };
-                        console.log('💬 [DISCUSS] Tracking presence with:', trackData);
-                        await channel.track(trackData);
-                    }
-                });
-
-            setPresenceChannel(channel);
-            setSelection('');
-
-            // Navigate to chat with highlightId as query param
-            const chatUrl = `/chat/${contentId}?highlightId=${highlightData.highlightId}`;
-            console.log('💬 [DISCUSS] Navigating to chat:', chatUrl);
-            router.push(chatUrl);
+        // Save highlight
+        console.log('💬 [DISCUSS] Saving highlight...');
+        const highlightPayload = {
+            contentId,
+            text: selection,
+            context: processedText.substring(0, 100),
+            userId,
+            startIndex: selectionStartIndex >= 0 ? selectionStartIndex : undefined,
+            endIndex: selectionEndIndex >= 0 ? selectionEndIndex : undefined
         };
+        console.log('🔍 [DISCUSS DEBUG] Highlight request body:', JSON.stringify(highlightPayload, null, 2));
 
-        // Don't render until client-side to prevent hydration mismatches
-        if (!isClient) {
-            return (
-                <div className="flex items-center justify-center min-h-screen">
-                    <p className="text-[12px] text-muted-foreground">Loading</p>
-                </div>
-            );
+        const response = await fetch(`${getApiUrl()}/highlights`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(highlightPayload),
+        });
+
+        console.log('💬 [DISCUSS] Highlight save response status:', response.status);
+        if (!response.ok) {
+            console.log('❌ [DISCUSS] Failed to save highlight');
+            setSelection('');
+            return;
         }
 
+        const highlightData = await response.json();
+        console.log('💬 [DISCUSS] Highlight saved:', highlightData);
+        console.log('🔍 [DISCUSS DEBUG] Highlight ID returned:', highlightData.highlightId);
+        console.log('✅ [DISCUSS DEBUG] Will pass highlightId to chat page via URL!');
+
+        // Join Presence channel for matching
+        const channelName = `content:${contentId}`;
+        console.log('💬 [DISCUSS] Joining presence channel:', channelName);
+        console.log('🔍 [DISCUSS DEBUG] If two users have same contentId, they should see each other in:', channelName);
+        const channel = supabase.channel(channelName);
+
+        channel
+            .on('presence', { event: 'sync' }, () => {
+                console.log('💬 [DISCUSS] Presence sync');
+            })
+            .subscribe(async (status) => {
+                console.log('💬 [DISCUSS] Channel subscription status:', status);
+                if (status === 'SUBSCRIBED') {
+                    const trackData = {
+                        userId: userId,
+                        selectedText: selection,
+                        paragraphIndex: selectedParagraphIndex,
+                        startIndex: selectionStartIndex,
+                        endIndex: selectionEndIndex,
+                        timestamp: new Date().toISOString()
+                    };
+                    console.log('💬 [DISCUSS] Tracking presence with:', trackData);
+                    await channel.track(trackData);
+                }
+            });
+
+        setPresenceChannel(channel);
+        setSelection('');
+
+        // Navigate to chat with highlightId as query param
+        const chatUrl = `/chat/${contentId}?highlightId=${highlightData.highlightId}`;
+        console.log('💬 [DISCUSS] Navigating to chat:', chatUrl);
+        router.push(chatUrl);
+    };
+
+    // Don't render until client-side to prevent hydration mismatches
+    if (!isClient) {
         return (
-            <div className="min-h-screen relative">
-                {/* Ambient reading gradient */}
-                <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full bg-gradient-to-br from-orange-300/8 via-transparent to-amber-300/8 blur-3xl pointer-events-none gradient-shift" />
-
-                {/* Header - Sticky with back navigation */}
-                <header className="border-b border-border/50 sticky top-0 glass z-10">
-                    <div className="max-w-3xl mx-auto px-8 py-6 flex justify-between items-center">
-                        <Link
-                            href="/dashboard"
-                            className="text-[11px] text-muted-foreground hover:text-foreground transition-all duration-300 inline-block font-light tracking-wide"
-                        >
-                            ← Library
-                        </Link>
-
-                        {/* Perspective Replay Toggle */}
-                        {pastSessions.length > 0 && (
-                            <button
-                                onClick={() => {
-                                    console.log('🎭 [REPLAY] Toggling replay mode from', replayMode, 'to', !replayMode);
-                                    setReplayMode(!replayMode);
-                                }}
-                                className={`text-[11px] font-light tracking-wide transition-all duration-300 flex items-center gap-2 px-3 py-1.5 rounded-full ${replayMode
-                                    ? 'bg-orange-700/10 text-orange-800 border border-orange-700/20'
-                                    : 'text-muted-foreground hover:text-foreground border border-transparent'
-                                    }`}
-                            >
-                                <span>🎭</span>
-                                <span>Perspective Replay</span>
-                                <span className={`w-2 h-2 rounded-full transition-all duration-300 ${replayMode ? 'bg-orange-700' : 'bg-muted-foreground/30'
-                                    }`} />
-                            </button>
-                        )}
-                    </div>
-                </header>
-
-                <div className="max-w-3xl mx-auto px-8 py-20 relative z-10">
-                    {/* Header */}
-                    <div className="mb-20 pb-16 border-b border-border/20">
-                        {content.metadata.category && (
-                            <div className="text-[10px] text-muted-foreground/70 mb-4 tracking-widest uppercase font-light">
-                                {content.metadata.category}
-                                {content.metadata.readingTime && (
-                                    <span className="ml-4">· {content.metadata.readingTime}</span>
-                                )}
-                            </div>
-                        )}
-                        <h1 className="text-[36px] font-light leading-[1.25] tracking-[-0.02em] text-foreground/95">
-                            {content.metadata.title}
-                        </h1>
-                    </div>
-
-                    {/* Content */}
-                    <article className="space-y-7" id="content-text">
-                        {content.paragraphs.map((para: string, idx: number) => {
-                            // Check if this paragraph has related discussions using precise position matching
-                            const relevantSessions = replayMode ? pastSessions.filter(session => {
-                                const highlightedText = session.highlightedText;
-                                console.log(`🔍 [REPLAY] Checking paragraph ${idx} against session:`, {
-                                    sessionId: session.id,
-                                    highlightedText: highlightedText?.substring(0, 50) + '...',
-                                    startIndex: session.startIndex,
-                                    endIndex: session.endIndex,
-                                    paraPreview: para.substring(0, 50) + '...'
-                                });
-
-                                // If session has highlighted text with position data, use precise matching
-                                if (highlightedText &&
-                                    typeof session.startIndex === 'number' &&
-                                    typeof session.endIndex === 'number') {
-
-                                    // First, find which paragraph the highlight belongs to
-                                    let highlightParagraphIndex = -1;
-                                    for (let i = 0; i < content.paragraphs.length; i++) {
-                                        if (content.paragraphs[i].includes(highlightedText)) {
-                                            highlightParagraphIndex = i;
-                                            break;
-                                        }
-                                    }
-
-                                    console.log(`🔍 [REPLAY] Highlight found in paragraph ${highlightParagraphIndex}, current: ${idx}`);
-
-                                    // Only show indicator on the exact paragraph that was highlighted
-                                    return highlightParagraphIndex === idx;
-                                }
-                                // Fall back to fuzzy matching for old sessions without position data
-                                else if (highlightedText) {
-                                    const similarity = calculateSimilarity(para, highlightedText);
-                                    console.log(`🔍 [REPLAY] Fuzzy match similarity: ${similarity}`);
-                                    return similarity >= 0.6; // Higher threshold for backward compatibility
-                                }
-                                // If no highlighted text, it's a content-level discussion (show on all paragraphs)
-                                console.log(`🔍 [REPLAY] No highlighted text for session ${session.id}`);
-                                return false; // Changed from true to false - don't show content-level discussions on all paragraphs
-                            }) : [];
-
-                            const hasDiscussions = relevantSessions.length > 0;
-
-                            if (replayMode && idx === 0) {
-                                console.log('🎭 [REPLAY] replayMode is ON, pastSessions count:', pastSessions.length);
-                            }
-
-                            if (para.startsWith('> ')) {
-                                return (
-                                    <blockquote key={idx} className="border-l-2 border-orange-700/30 pl-8 py-3 italic text-[15px] text-muted-foreground/90 leading-[1.9] font-light">
-                                        {para.substring(2)}
-                                    </blockquote>
-                                );
-                            } else if (para.startsWith('## ')) {
-                                return (
-                                    <h2 key={idx} className="text-[22px] font-light mt-16 mb-6 tracking-tight text-foreground/90">
-                                        {para.substring(3)}
-                                    </h2>
-                                );
-                            } else {
-                                return (
-                                    <div key={idx} className="relative group">
-                                        <p className="text-[16px] leading-[1.9] text-foreground/90 tracking-normal font-light">
-                                            {para}
-                                        </p>
-                                        {/* Replay indicator */}
-                                        {hasDiscussions && (
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedSession(relevantSessions[0]);
-                                                    setReplayDialogOpen(true);
-                                                }}
-                                                className="absolute -right-8 top-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[11px] text-orange-700 hover:text-orange-800 flex items-center gap-1"
-                                                title={`${relevantSessions.length} discussion${relevantSessions.length > 1 ? 's' : ''}`}
-                                            >
-                                                <span>💬</span>
-                                                <span className="font-mono">{relevantSessions.length}</span>
-                                            </button>
-                                        )}
-                                    </div>
-                                );
-                            }
-                        })}
-                    </article>
-                </div>
-
-                {/* Selection popover - Glass morphism */}
-                {selection && (
-                    <Popover open={!!selection}>
-                        <PopoverTrigger asChild>
-                            <div style={{ position: 'absolute', top: position.y, left: position.x }} />
-                        </PopoverTrigger>
-                        <PopoverContent className="glass shadow-lg shadow-orange-700/10 p-1.5 w-auto border-border/50">
-                            <Button
-                                onClick={handleDiscuss}
-                                variant="ghost"
-                                size="sm"
-                                className="h-9 px-4 text-[11px] font-light tracking-wide hover:scale-105 transition-all duration-300"
-                            >
-                                Discuss this
-                            </Button>
-                        </PopoverContent>
-                    </Popover>
-                )}
-
-                {/* Checking for match indicator - Floating pill */}
-                {checkingMatch && (
-                    <div className="fixed bottom-28 right-10 glass px-4 py-2 text-[11px] font-light tracking-wide shadow-md shadow-orange-700/10 border border-border/50">
-                        Matching...
-                    </div>
-                )}
-
-                {/* Perspective Replay Dialog */}
-                <PerspectiveReplay
-                    open={replayDialogOpen}
-                    onOpenChange={setReplayDialogOpen}
-                    session={selectedSession}
-                    currentUserId={currentUserId}
-                />
-
+            <div className="flex items-center justify-center min-h-screen">
+                <p className="text-[12px] text-muted-foreground">Loading</p>
             </div>
         );
     }
+
+    return (
+        <div className="min-h-screen relative">
+            {/* Ambient reading gradient */}
+            <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full bg-gradient-to-br from-orange-300/8 via-transparent to-amber-300/8 blur-3xl pointer-events-none gradient-shift" />
+
+            {/* Header - Sticky with back navigation */}
+            <header className="border-b border-border/50 sticky top-0 glass z-10">
+                <div className="max-w-3xl mx-auto px-8 py-6 flex justify-between items-center">
+                    <Link
+                        href="/dashboard"
+                        className="text-[11px] text-muted-foreground hover:text-foreground transition-all duration-300 inline-block font-light tracking-wide"
+                    >
+                        ← Library
+                    </Link>
+
+                    {/* Perspective Replay Toggle */}
+                    {pastSessions.length > 0 && (
+                        <button
+                            onClick={() => {
+                                console.log('🎭 [REPLAY] Toggling replay mode from', replayMode, 'to', !replayMode);
+                                setReplayMode(!replayMode);
+                            }}
+                            className={`text-[11px] font-light tracking-wide transition-all duration-300 flex items-center gap-2 px-3 py-1.5 rounded-full ${replayMode
+                                ? 'bg-orange-700/10 text-orange-800 border border-orange-700/20'
+                                : 'text-muted-foreground hover:text-foreground border border-transparent'
+                                }`}
+                        >
+                            <span>🎭</span>
+                            <span>Perspective Replay</span>
+                            <span className={`w-2 h-2 rounded-full transition-all duration-300 ${replayMode ? 'bg-orange-700' : 'bg-muted-foreground/30'
+                                }`} />
+                        </button>
+                    )}
+                </div>
+            </header>
+
+            <div className="max-w-3xl mx-auto px-8 py-20 relative z-10">
+                {/* Header */}
+                <div className="mb-20 pb-16 border-b border-border/20">
+                    {content.metadata.category && (
+                        <div className="text-[10px] text-muted-foreground/70 mb-4 tracking-widest uppercase font-light">
+                            {content.metadata.category}
+                            {content.metadata.readingTime && (
+                                <span className="ml-4">· {content.metadata.readingTime}</span>
+                            )}
+                        </div>
+                    )}
+                    <h1 className="text-[36px] font-light leading-[1.25] tracking-[-0.02em] text-foreground/95">
+                        {content.metadata.title}
+                    </h1>
+                </div>
+
+                {/* Content */}
+                <article className="space-y-7" id="content-text">
+                    {content.paragraphs.map((para: string, idx: number) => {
+                        // Check if this paragraph has related discussions using precise position matching
+                        const relevantSessions = replayMode ? pastSessions.filter(session => {
+                            const highlightedText = session.highlightedText;
+                            console.log(`🔍 [REPLAY] Checking paragraph ${idx} against session:`, {
+                                sessionId: session.id,
+                                highlightedText: highlightedText?.substring(0, 50) + '...',
+                                startIndex: session.startIndex,
+                                endIndex: session.endIndex,
+                                paraPreview: para.substring(0, 50) + '...'
+                            });
+
+                            // If session has highlighted text with position data, use precise matching
+                            if (highlightedText &&
+                                typeof session.startIndex === 'number' &&
+                                typeof session.endIndex === 'number') {
+
+                                // First, find which paragraph the highlight belongs to
+                                let highlightParagraphIndex = -1;
+                                for (let i = 0; i < content.paragraphs.length; i++) {
+                                    if (content.paragraphs[i].includes(highlightedText)) {
+                                        highlightParagraphIndex = i;
+                                        break;
+                                    }
+                                }
+
+                                console.log(`🔍 [REPLAY] Highlight found in paragraph ${highlightParagraphIndex}, current: ${idx}`);
+
+                                // Only show indicator on the exact paragraph that was highlighted
+                                return highlightParagraphIndex === idx;
+                            }
+                            // Fall back to fuzzy matching for old sessions without position data
+                            else if (highlightedText) {
+                                const similarity = calculateSimilarity(para, highlightedText);
+                                console.log(`🔍 [REPLAY] Fuzzy match similarity: ${similarity}`);
+                                return similarity >= 0.6; // Higher threshold for backward compatibility
+                            }
+                            // If no highlighted text, it's a content-level discussion (show on all paragraphs)
+                            console.log(`🔍 [REPLAY] No highlighted text for session ${session.id}`);
+                            return false; // Changed from true to false - don't show content-level discussions on all paragraphs
+                        }) : [];
+
+                        const hasDiscussions = relevantSessions.length > 0;
+
+                        if (replayMode && idx === 0) {
+                            console.log('🎭 [REPLAY] replayMode is ON, pastSessions count:', pastSessions.length);
+                        }
+
+                        if (para.startsWith('> ')) {
+                            return (
+                                <blockquote key={idx} className="border-l-2 border-orange-700/30 pl-8 py-3 italic text-[15px] text-muted-foreground/90 leading-[1.9] font-light">
+                                    {para.substring(2)}
+                                </blockquote>
+                            );
+                        } else if (para.startsWith('## ')) {
+                            return (
+                                <h2 key={idx} className="text-[22px] font-light mt-16 mb-6 tracking-tight text-foreground/90">
+                                    {para.substring(3)}
+                                </h2>
+                            );
+                        } else {
+                            return (
+                                <div key={idx} className="relative group">
+                                    <p className="text-[16px] leading-[1.9] text-foreground/90 tracking-normal font-light">
+                                        {para}
+                                    </p>
+                                    {/* Replay indicator */}
+                                    {hasDiscussions && (
+                                        <button
+                                            onClick={() => {
+                                                setSelectedSession(relevantSessions[0]);
+                                                setReplayDialogOpen(true);
+                                            }}
+                                            className="absolute -right-8 top-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[11px] text-orange-700 hover:text-orange-800 flex items-center gap-1"
+                                            title={`${relevantSessions.length} discussion${relevantSessions.length > 1 ? 's' : ''}`}
+                                        >
+                                            <span>💬</span>
+                                            <span className="font-mono">{relevantSessions.length}</span>
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        }
+                    })}
+                </article>
+            </div>
+
+            {/* Selection popover - Glass morphism */}
+            {selection && (
+                <Popover open={!!selection}>
+                    <PopoverTrigger asChild>
+                        <div style={{ position: 'absolute', top: position.y, left: position.x }} />
+                    </PopoverTrigger>
+                    <PopoverContent className="glass shadow-lg shadow-orange-700/10 p-1.5 w-auto border-border/50">
+                        <Button
+                            onClick={handleDiscuss}
+                            variant="ghost"
+                            size="sm"
+                            className="h-9 px-4 text-[11px] font-light tracking-wide hover:scale-105 transition-all duration-300"
+                        >
+                            Discuss this
+                        </Button>
+                    </PopoverContent>
+                </Popover>
+            )}
+
+            {/* Checking for match indicator - Floating pill */}
+            {checkingMatch && (
+                <div className="fixed bottom-28 right-10 glass px-4 py-2 text-[11px] font-light tracking-wide shadow-md shadow-orange-700/10 border border-border/50">
+                    Matching...
+                </div>
+            )}
+
+            {/* Perspective Replay Dialog */}
+            <PerspectiveReplay
+                open={replayDialogOpen}
+                onOpenChange={setReplayDialogOpen}
+                session={selectedSession}
+                currentUserId={currentUserId}
+            />
+
+        </div>
+    );
+}

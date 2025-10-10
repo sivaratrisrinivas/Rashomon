@@ -58,8 +58,12 @@ const sanitizeStructuredContent = (input: StructuredContent | null | undefined) 
 
 const app = new Elysia()
   .use(cors())
+  .onError(({ error, set }) => {
+    set.headers['content-type'] = 'application/json';
+    return { error: error instanceof Error ? error.message : String(error) };
+  })
   .get('/', () => ({ status: 'ok' }))
-  .put('/api/profile', async ({ body, set }) => {
+  .put('/api/profile', async ({ body, set }: { body: any, set: any }) => {
     const { userId, reading_preferences } = body as { userId: string, reading_preferences: string[] };
     try {
       const supabase = createClient(supabaseUrl, supabaseKey);
@@ -77,7 +81,7 @@ const app = new Elysia()
       return { error: (err as Error).message };
     }
   })
-  .post('/content/url', async ({ body, set }) => {
+  .post('/content/url', async ({ body, set }: { body: any, set: any }) => {
     const { url, userId } = body as { url: string, userId: string };
     try {
       const supabase = createClient(supabaseUrl, supabaseKey);
@@ -285,7 +289,7 @@ const app = new Elysia()
       return { error: (err as Error).message };
     }
   })
-  .post('/content/upload', async ({ body, set }) => {
+  .post('/content/upload', async ({ body, set }: { body: any, set: any }) => {
     const { filePath, userId } = body as { filePath: string, userId: string };
     console.log('\n📤 UPLOAD ENDPOINT CALLED');
     console.log('  - filePath:', filePath);
@@ -471,7 +475,7 @@ const app = new Elysia()
       return { error: (err as Error).message };
     }
   })
-  .post('/highlights', async ({ body, set }) => {
+  .post('/highlights', async ({ body, set }: { body: any, set: any }) => {
     try {
         const { contentId, text, context, userId, startIndex, endIndex } = body as { 
             contentId: string, 
@@ -556,7 +560,7 @@ const app = new Elysia()
         return { error: err.message || 'An unexpected server error occurred.' };
     }
   })
-  .post('/messages', async ({ body, set }) => {
+  .post('/messages', async ({ body, set }: { body: any, set: any }) => {
     const { highlightId, userId, message, timestamp, contentId } = body as { 
       highlightId?: string,
       contentId?: string,
@@ -706,7 +710,37 @@ const app = new Elysia()
       return { error: (err as Error).message };
     }
   })
-  .get('/content/duplicates', async ({ set }) => {
+  .get('/content/:contentId', async ({ params, set }: { params: any, set: any }) => {
+    const { contentId } = params;
+    
+    if (!contentId) {
+      set.status = 400;
+      return { error: 'Content ID is required' };
+    }
+
+    try {
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      const { data, error } = await supabase
+        .from('content')
+        .select('id, processed_text, source_type, source_info, user_id, created_at')
+        .eq('id', contentId)
+        .single();
+
+      if (error) throw error;
+      if (!data) {
+        set.status = 404;
+        return { error: 'Content not found' };
+      }
+
+      return { content: data };
+    } catch (err: any) {
+      console.error('❌ [CONTENT] Error:', err.message);
+      set.status = err.message === 'NOT_FOUND' ? 404 : 500;
+      return { error: err.message };
+    }
+  })
+  .get('/content/duplicates', async ({ set }: { set: any }) => {
     try {
       const supabase = createClient(supabaseUrl, supabaseKey);
       
@@ -751,7 +785,7 @@ const app = new Elysia()
       return { error: err.message };
     }
   })
-  .get('/content/:contentId/sessions', async ({ params, set }) => {
+  .get('/content/:contentId/sessions', async ({ params, set }: { params: any, set: any }) => {
     const { contentId } = params;
     
     if (!contentId) {

@@ -7,7 +7,8 @@ import { getBrowserRuntimeEnv } from '@/lib/runtime-env';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-// TODO: Re-add Supabase imports after auth rebuild
+import { createClient } from '@/lib/supabase/client';
+import { User } from '@supabase/supabase-js';
 
 const getApiUrl = () => getBrowserRuntimeEnv().apiUrl;
 
@@ -18,8 +19,8 @@ export default function ChatPage({ params }: ChatPageProps) {
     const router = useRouter();
 
     // Refs to hold the channel instances
-    // const chatChannelRef = useRef<RealtimeChannel | null>(null); // TODO: Re-enable after auth
-    // const presenceChannelRef = useRef<RealtimeChannel | null>(null); // TODO: Re-enable after auth
+    const chatChannelRef = useRef<any>(null);
+    const presenceChannelRef = useRef<any>(null);
 
     const [messages, setMessages] = useState<{ id: string; text: string; userId: string; timestamp: string }[]>([]);
     const [newMessage, setNewMessage] = useState('');
@@ -52,7 +53,7 @@ export default function ChatPage({ params }: ChatPageProps) {
     // Fetch content title (no changes here)
     useEffect(() => {
         const fetchContent = async () => {
-            const supabase = getSupabaseClient();
+            const supabase = createClient();
             const { data } = await supabase
                 .from('content')
                 .select('processed_text')
@@ -73,13 +74,7 @@ export default function ChatPage({ params }: ChatPageProps) {
 
     // Setup or remove channels
     useEffect(() => {
-        // TODO: Re-implement with new auth
-        console.log('⚠️ [CHAT] Real-time chat temporarily disabled - needs auth rebuild');
-        setCurrentUserId('temp-user-id');
-        return;
-
-        /*
-        const supabase = getSupabaseClient();
+        const supabase = createClient();
         let isActive = true; // Flag to prevent race conditions
 
         const setupChannels = async () => {
@@ -282,7 +277,6 @@ export default function ChatPage({ params }: ChatPageProps) {
                 presenceChannelRef.current = null;
             }
         };
-        */
     }, [contentId]); // Removed 'router' from dependencies as it doesn't change
 
     // Timer (no changes here)
