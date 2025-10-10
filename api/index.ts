@@ -115,8 +115,8 @@ try {
   // Try to require the exact module that's failing
   const typeboxModule = require('@sinclair/typebox');
   console.log('✅ [DIAGNOSTIC] @sinclair/typebox available via require:', !!typeboxModule);
-} catch (error) {
-  console.error('❌ [DIAGNOSTIC] @sinclair/typebox not available via require:', error.message);
+  } catch (error: any) {
+    console.error('❌ [DIAGNOSTIC] @sinclair/typebox not available via require:', error.message);
 }
 
 const app = new Elysia()
@@ -1015,7 +1015,10 @@ const app = new Elysia()
       return { error: err.message };
     }
   })
-  .listen(process.env.PORT || 3001);
+  .listen({
+    port: process.env.PORT || 3001,
+    hostname: '0.0.0.0'
+  });
 
 console.log(`Server running at ${app.server?.hostname}:${app.server?.port}`);
 
