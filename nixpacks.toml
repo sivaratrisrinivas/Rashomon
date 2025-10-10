@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["bun"]
+
+[phases.install]
+cmds = ["bun install"]
+
+[phases.build]
+cmds = ["echo 'Monorepo detected - services will be built individually'"]
+
+[start]
+cmd = "echo 'This is a monorepo - individual services should be deployed separately'"
