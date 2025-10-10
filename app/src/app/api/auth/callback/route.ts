@@ -8,12 +8,18 @@ export async function GET(request: Request) {
   const code = url.searchParams.get('code');
   const next = url.searchParams.get('next') ?? '/';
 
+  console.log('[CALLBACK] Request URL:', url.href);
+  console.log('[CALLBACK] Request headers cookie:', request.headers.get('cookie'));
+
   if (!code) {
     return NextResponse.redirect(new URL('/login?error=no_code', url.origin));
   }
 
   const { supabaseUrl, supabaseAnonKey } = getServerRuntimeEnv();
   const cookieStore = await cookies();
+  
+  console.log('[CALLBACK] cookieStore type:', typeof cookieStore);
+  console.log('[CALLBACK] cookieStore.getAll():', cookieStore.getAll());
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
