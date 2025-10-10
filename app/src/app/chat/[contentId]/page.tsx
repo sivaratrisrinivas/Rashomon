@@ -77,7 +77,7 @@ export default function ChatPage({ params }: ChatPageProps) {
         console.log('⚠️ [CHAT] Real-time chat temporarily disabled - needs auth rebuild');
         setCurrentUserId('temp-user-id');
         return;
-        
+
         /*
         const supabase = getSupabaseClient();
         let isActive = true; // Flag to prevent race conditions
@@ -282,6 +282,7 @@ export default function ChatPage({ params }: ChatPageProps) {
                 presenceChannelRef.current = null;
             }
         };
+        */
     }, [contentId]); // Removed 'router' from dependencies as it doesn't change
 
     // Timer (no changes here)
