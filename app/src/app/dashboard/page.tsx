@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import { getSupabaseClient } from '@/lib/supabase';
 import Link from 'next/link';
 import { Info } from 'lucide-react';
 import { getBrowserRuntimeEnv } from '@/lib/runtime-env';
@@ -23,13 +22,13 @@ const DashboardPage = () => {
 
         setIsUrlProcessing(true);
         try {
-            const { data: { user } } = await getSupabaseClient().auth.getUser();
-            if (!user) return;
+            // TODO: Re-implement with new auth
+            const userId = 'temp-user-id';
 
             const response = await fetch(`${getBrowserRuntimeEnv().apiUrl}/content/url`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url, userId: user.id }),
+                body: JSON.stringify({ url, userId }),
             });
 
             const { contentId, isExisting } = await response.json();
@@ -51,28 +50,24 @@ const DashboardPage = () => {
 
         setIsFileProcessing(true);
         try {
-            const { data: { user } } = await getSupabaseClient().auth.getUser();
-            if (!user) {
-                console.error('No user found');
-                return;
-            }
+            // TODO: Re-implement with new auth and file upload
+            const userId = 'temp-user-id';
 
+            console.log('File upload temporarily disabled - need to re-implement with new auth');
+            alert('File upload feature will be re-enabled after auth is rebuilt');
+            return;
+
+            /*
             console.log('Uploading file to storage...');
-            const filePath = `${user.id}/${Date.now()}-${file.name}`;
-            const { error: uploadError } = await getSupabaseClient().storage.from('uploads').upload(filePath, file);
-
-            if (uploadError) {
-                console.error('Storage upload error:', uploadError);
-                alert('Failed to upload file: ' + uploadError.message);
-                return;
-            }
-
+            const filePath = `${userId}/${Date.now()}-${file.name}`;
+            
             console.log('File uploaded, processing OCR...');
             const response = await fetch(`${getBrowserRuntimeEnv().apiUrl}/content/upload`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ filePath, userId: user.id }),
+                body: JSON.stringify({ filePath, userId }),
             });
+            */
 
             const result = await response.json();
 

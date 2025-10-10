@@ -3,11 +3,11 @@
 import { use, useEffect, useState, useRef } from 'react'; // Import useRef
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { getSupabaseClient } from '@/lib/supabase';
 import { getBrowserRuntimeEnv } from '@/lib/runtime-env';
-import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+
+// TODO: Re-add Supabase imports after auth rebuild
 
 const getApiUrl = () => getBrowserRuntimeEnv().apiUrl;
 
@@ -18,8 +18,8 @@ export default function ChatPage({ params }: ChatPageProps) {
     const router = useRouter();
 
     // Refs to hold the channel instances
-    const chatChannelRef = useRef<RealtimeChannel | null>(null);
-    const presenceChannelRef = useRef<RealtimeChannel | null>(null);
+    // const chatChannelRef = useRef<RealtimeChannel | null>(null); // TODO: Re-enable after auth
+    // const presenceChannelRef = useRef<RealtimeChannel | null>(null); // TODO: Re-enable after auth
 
     const [messages, setMessages] = useState<{ id: string; text: string; userId: string; timestamp: string }[]>([]);
     const [newMessage, setNewMessage] = useState('');
@@ -73,6 +73,12 @@ export default function ChatPage({ params }: ChatPageProps) {
 
     // Setup or remove channels
     useEffect(() => {
+        // TODO: Re-implement with new auth
+        console.log('⚠️ [CHAT] Real-time chat temporarily disabled - needs auth rebuild');
+        setCurrentUserId('temp-user-id');
+        return;
+        
+        /*
         const supabase = getSupabaseClient();
         let isActive = true; // Flag to prevent race conditions
 

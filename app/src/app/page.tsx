@@ -1,11 +1,7 @@
-import { createSupabaseServerClient } from '@/lib/supabase-server';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 export default async function Home() {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
   return (
     <div className="flex items-center justify-center min-h-screen relative">
       {/* Floating orbs - psychedelic touch */}

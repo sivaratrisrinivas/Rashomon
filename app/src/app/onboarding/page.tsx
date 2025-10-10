@@ -5,7 +5,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { getSupabaseClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { getBrowserRuntimeEnv } from '@/lib/runtime-env';
 
@@ -16,23 +15,9 @@ const OnboardingPage = () => {
     const router = useRouter();
 
     const handleSubmit = async () => {
-        const supabase = getSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const response = await fetch(`${getBrowserRuntimeEnv().apiUrl}/api/profile`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userId: user.id,
-                reading_preferences: selectedPreferences
-            }),
-        });
-
-        const result = await response.json();
-        if (result.success) {
-            router.push('/');
-        }
+        // TODO: Re-implement with new auth
+        console.log('Selected preferences:', selectedPreferences);
+        router.push('/dashboard');
     };
 
     return (

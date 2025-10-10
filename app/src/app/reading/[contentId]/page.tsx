@@ -5,12 +5,12 @@
 import { use, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { getSupabaseClient } from '@/lib/supabase';
 import { getBrowserRuntimeEnv } from '@/lib/runtime-env';
-import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PerspectiveReplay } from '@/components/PerspectiveReplay';
+
+// TODO: Re-add Supabase imports after auth rebuild
 
 interface Message {
     userId: string;
@@ -40,15 +40,15 @@ export default function ReadingPage({ params }: ReadingPageProps) {
 
     useEffect(() => {
         const fetchContent = async () => {
-            const supabase = getSupabaseClient();
-            const { data: content } = await supabase
-                .from('content')
-                .select('processed_text')
-                .eq('id', contentId)
-                .single();
-
-            if (content) {
-                setProcessedText(content.processed_text);
+            // TODO: Re-implement with new auth
+            try {
+                const response = await fetch(`${getBrowserRuntimeEnv().apiUrl}/content/${contentId}`);
+                const { content } = await response.json();
+                if (content) {
+                    setProcessedText(content.processed_text);
+                }
+            } catch (error) {
+                console.error('Failed to fetch content:', error);
             }
             setLoading(false);
         };
@@ -107,7 +107,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
     const router = useRouter();
     const [selection, setSelection] = useState('');
     const [position, setPosition] = useState({ x: 0, y: 0 });
-    const [presenceChannel, setPresenceChannel] = useState<RealtimeChannel | null>(null);
+    // const [presenceChannel, setPresenceChannel] = useState<RealtimeChannel | null>(null); // TODO: Re-enable after auth
     const [selectedParagraphIndex, setSelectedParagraphIndex] = useState<number>(-1);
     const [selectionStartIndex, setSelectionStartIndex] = useState<number>(-1);
     const [selectionEndIndex, setSelectionEndIndex] = useState<number>(-1);
@@ -238,6 +238,9 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
 
     // Check for existing matches when text is selected
     const checkForExistingMatch = async (selectedText: string, paragraphIndex: number, startIdx?: number, endIdx?: number) => {
+        // TODO: Re-implement with new auth
+        return false; // Temporarily disable matching
+        /*
         const supabase = getSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return false;
@@ -382,23 +385,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                 setCheckingMatch(false);
 
                 if (hasMatch) {
-                    // Save highlight before navigating
-                    const supabase = getSupabaseClient();
-                    const { data: { user: userAuth } } = await supabase.auth.getUser();
-                    if (userAuth) {
-                        await fetch(`${getApiUrl()}/highlights`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                contentId,
-                                text: sel,
-                                context: processedText.substring(0, 100),
-                                userId: userAuth.id,
-                                startIndex: startIndex >= 0 ? startIndex : undefined,
-                                endIndex: endIndex >= 0 ? endIndex : undefined
-                            }),
-                        });
-                    }
+                    // TODO: Re-implement with new auth
                     router.push(`/chat/${contentId}`);
                 } else {
                     // No match, show discuss button
@@ -420,6 +407,8 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
     }, [content.paragraphs, contentId, processedText, router, checkForExistingMatch]);
 
     // Cleanup presence channel on unmount
+    // TODO: Re-enable after auth
+    /*
     useEffect(() => {
         return () => {
             if (presenceChannel) {
@@ -427,6 +416,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
             }
         };
     }, [presenceChannel]);
+    */
 
     const handleDiscuss = async () => {
         console.log('💬 [DISCUSS] handleDiscuss called');
@@ -455,10 +445,10 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
         // Save highlight
         console.log('💬 [DISCUSS] Saving highlight...');
         const highlightPayload = {
-            contentId,
-            text: selection,
-            context: processedText.substring(0, 100),
-            userId: user.id,
+                contentId,
+                text: selection,
+                context: processedText.substring(0, 100),
+                userId,
             startIndex: selectionStartIndex >= 0 ? selectionStartIndex : undefined,
             endIndex: selectionEndIndex >= 0 ? selectionEndIndex : undefined
         };
