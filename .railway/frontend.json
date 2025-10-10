@@ -1,0 +1,13 @@
+{
+  "name": "frontend",
+  "source": "app",
+  "build": {
+    "builder": "nixpacks"
+  },
+  "deploy": {
+    "startCommand": "bun run start:prod",
+    "healthcheckPath": "/api/health",
+    "healthcheckTimeout": 300,
+    "restartPolicyType": "on_failure"
+  }
+}

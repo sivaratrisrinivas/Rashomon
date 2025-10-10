@@ -2,7 +2,7 @@
 nixPkgs = ["bun"]
 
 [phases.install]
-cmds = ["bun install"]
+cmds = ["echo 'Monorepo detected - individual services will be built from their directories'"]
 
 [phases.build]
 cmds = ["echo 'Monorepo detected - services will be built individually'"]

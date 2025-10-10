@@ -1,0 +1,13 @@
+{
+  "name": "backend",
+  "source": "api",
+  "build": {
+    "builder": "nixpacks"
+  },
+  "deploy": {
+    "startCommand": "bun run start:prod",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 300,
+    "restartPolicyType": "on_failure"
+  }
+}
