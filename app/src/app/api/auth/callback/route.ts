@@ -28,9 +28,16 @@ export async function GET(request: Request) {
       },
       setAll(cookiesToSet) {
         try {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
+          cookiesToSet.forEach(({ name, value, options }) => {
+            // Fix cookie options for Render proxy environment
+            const cookieOptions = {
+              ...options,
+              sameSite: 'lax' as const,
+              secure: true,
+              path: '/',
+            };
+            cookieStore.set(name, value, cookieOptions);
+          });
         } catch (error) {
           console.error('[CALLBACK] Cookie set error:', error);
         }
