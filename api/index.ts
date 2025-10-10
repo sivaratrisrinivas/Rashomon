@@ -1,3 +1,54 @@
+// Add diagnostic logging for module resolution
+console.log('🔍 [DIAGNOSTIC] Starting module resolution diagnostics...');
+
+try {
+  console.log('🔍 [DIAGNOSTIC] Attempting to import @sinclair/typebox...');
+  const typebox = await import('@sinclair/typebox');
+  console.log('✅ [DIAGNOSTIC] @sinclair/typebox imported successfully:', Object.keys(typebox));
+} catch (error) {
+  console.error('❌ [DIAGNOSTIC] Failed to import @sinclair/typebox:', error);
+}
+
+try {
+  console.log('🔍 [DIAGNOSTIC] Attempting to import elysia...');
+  const { Elysia } = await import('elysia');
+  console.log('✅ [DIAGNOSTIC] Elysia imported successfully');
+} catch (error) {
+  console.error('❌ [DIAGNOSTIC] Failed to import Elysia:', error);
+}
+
+// Check if we're in a container environment
+console.log('🔍 [DIAGNOSTIC] Environment info:', {
+  NODE_ENV: process.env.NODE_ENV,
+  PWD: process.env.PWD,
+  cwd: process.cwd(),
+  platform: process.platform,
+  arch: process.arch
+});
+
+// Check if node_modules exists and what's in it
+try {
+  const fs = await import('fs');
+  const path = await import('path');
+  const nodeModulesPath = path.join(process.cwd(), 'node_modules');
+  console.log('🔍 [DIAGNOSTIC] node_modules exists:', fs.existsSync(nodeModulesPath));
+  
+  if (fs.existsSync(nodeModulesPath)) {
+    const typeboxPath = path.join(nodeModulesPath, '@sinclair', 'typebox');
+    console.log('🔍 [DIAGNOSTIC] @sinclair/typebox path exists:', fs.existsSync(typeboxPath));
+    
+    if (fs.existsSync(typeboxPath)) {
+      const packageJsonPath = path.join(typeboxPath, 'package.json');
+      if (fs.existsSync(packageJsonPath)) {
+        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+        console.log('🔍 [DIAGNOSTIC] @sinclair/typebox version:', packageJson.version);
+      }
+    }
+  }
+} catch (error) {
+  console.error('❌ [DIAGNOSTIC] Error checking node_modules:', error);
+}
+
 import { Elysia } from 'elysia';
 import { cors } from '@elysiajs/cors';
 import { createClient } from '@supabase/supabase-js';
@@ -57,6 +108,16 @@ const sanitizeStructuredContent = (input: StructuredContent | null | undefined) 
     paragraphs: cleanedParagraphs,
   };
 };
+
+// Additional module resolution check before creating Elysia
+console.log('🔍 [DIAGNOSTIC] Pre-Elysia module check...');
+try {
+  // Try to require the exact module that's failing
+  const typeboxModule = require('@sinclair/typebox');
+  console.log('✅ [DIAGNOSTIC] @sinclair/typebox available via require:', !!typeboxModule);
+} catch (error) {
+  console.error('❌ [DIAGNOSTIC] @sinclair/typebox not available via require:', error.message);
+}
 
 const app = new Elysia()
   .use(cors({
