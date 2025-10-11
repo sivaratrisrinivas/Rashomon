@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getBrowserRuntimeEnv } from '@/lib/runtime-env';
+import { getServerRuntimeEnv } from '@/lib/runtime-env';
 
 export async function GET(_request: NextRequest) {
   try {
-    const apiUrl = getBrowserRuntimeEnv().apiUrl;
+    console.log('🔍 [HEALTH DEBUG] ===== HEALTH ENDPOINT HIT =====');
+    console.log('🔍 [HEALTH DEBUG] Request headers:', Object.fromEntries(_request.headers.entries()));
+    const apiUrl = getServerRuntimeEnv().apiUrl;
     console.log('🔍 [HEALTH DEBUG] Frontend health endpoint called');
     console.log('🔍 [HEALTH DEBUG] API URL from runtime env:', apiUrl);
     
