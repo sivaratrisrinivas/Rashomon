@@ -6,6 +6,11 @@ export async function GET(request: Request) {
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? '/dashboard'
 
+  // Use production URL instead of request.url to avoid localhost redirects
+  const baseUrl = process.env.NODE_ENV === 'production' 
+    ? 'https://impartial-solace-production.up.railway.app'
+    : request.url.split('/').slice(0, 3).join('/')
+
   if (code) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
@@ -22,12 +27,12 @@ export async function GET(request: Request) {
       
       // Redirect to onboarding if preferences not set
       if (!profile?.reading_preferences || profile.reading_preferences.length === 0) {
-        return NextResponse.redirect(new URL('/onboarding', request.url))
+        return NextResponse.redirect(new URL('/onboarding', baseUrl))
       }
       
-      return NextResponse.redirect(new URL(next, request.url))
+      return NextResponse.redirect(new URL(next, baseUrl))
     }
   }
 
-  return NextResponse.redirect(new URL('/login', request.url))
+  return NextResponse.redirect(new URL('/login', baseUrl))
 }
