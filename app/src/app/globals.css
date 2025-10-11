@@ -231,6 +231,51 @@
   }
 }
 
+/* Mobile-specific optimizations */
+@media (max-width: 768px) {
+
+  /* Improve text selection on mobile */
+  * {
+    -webkit-touch-callout: none;
+    -webkit-user-select: text;
+    -khtml-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+  }
+
+  /* Custom selection styling for better visibility */
+  ::selection {
+    background: rgba(255, 165, 0, 0.2);
+    color: inherit;
+  }
+
+  /* Touch-friendly button sizing */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Mobile-specific spacing */
+  .mobile-px {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .mobile-py {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  /* Prevent zoom on input focus */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
 /* Glass morphism utility classes */
 .glass {
   background: oklch(0.98 0.015 45 / 0.7);

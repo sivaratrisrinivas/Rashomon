@@ -127,6 +127,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
     const [selectionEndIndex, setSelectionEndIndex] = useState<number>(-1);
     const [checkingMatch, setCheckingMatch] = useState(false);
     const [isClient, setIsClient] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
 
     // Perspective Replay state
     const [replayMode, setReplayMode] = useState(false);
@@ -139,6 +140,30 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
     useEffect(() => {
         setIsClient(true);
     }, []);
+
+    // Mobile detection
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    // Clear selection when clicking outside on mobile
+    useEffect(() => {
+        if (isMobile && selection) {
+            const handleClickOutside = (e: MouseEvent) => {
+                // Clear selection if clicking outside the button
+                if (!(e.target as Element).closest('button')) {
+                    setSelection('');
+                }
+            };
+            document.addEventListener('click', handleClickOutside);
+            return () => document.removeEventListener('click', handleClickOutside);
+        }
+    }, [isMobile, selection]);
 
     // Cleanup presence channel on unmount
     useEffect(() => {
@@ -671,23 +696,37 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
                 </article>
             </div>
 
-            {/* Selection popover - Glass morphism */}
+            {/* Selection popover - Hybrid approach for mobile/desktop */}
             {selection && (
-                <Popover open={!!selection}>
-                    <PopoverTrigger asChild>
-                        <div style={{ position: 'absolute', top: position.y, left: position.x }} />
-                    </PopoverTrigger>
-                    <PopoverContent className="glass shadow-lg shadow-orange-700/10 p-1.5 w-auto border-border/50">
+                isMobile ? (
+                    // Mobile: Fixed bottom button
+                    <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50">
                         <Button
                             onClick={handleDiscuss}
-                            variant="ghost"
-                            size="sm"
-                            className="h-9 px-4 text-[11px] font-light tracking-wide hover:scale-105 transition-all duration-300"
+                            className="glass shadow-lg px-6 py-3 text-sm font-light tracking-wide hover:scale-105 transition-all duration-300 border-border/50 touch-target"
+                            variant="outline"
                         >
                             Discuss this
                         </Button>
-                    </PopoverContent>
-                </Popover>
+                    </div>
+                ) : (
+                    // Desktop: Popover (existing behavior)
+                    <Popover open={!!selection}>
+                        <PopoverTrigger asChild>
+                            <div style={{ position: 'absolute', top: position.y, left: position.x }} />
+                        </PopoverTrigger>
+                        <PopoverContent className="glass shadow-lg shadow-orange-700/10 p-1.5 w-auto border-border/50">
+                            <Button
+                                onClick={handleDiscuss}
+                                variant="ghost"
+                                size="sm"
+                                className="h-9 px-4 text-[11px] font-light tracking-wide hover:scale-105 transition-all duration-300"
+                            >
+                                Discuss this
+                            </Button>
+                        </PopoverContent>
+                    </Popover>
+                )
             )}
 
             {/* Checking for match indicator - Floating pill */}
