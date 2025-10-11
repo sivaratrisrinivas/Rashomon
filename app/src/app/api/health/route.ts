@@ -4,14 +4,18 @@ import { getBrowserRuntimeEnv } from '@/lib/runtime-env';
 export async function GET(_request: NextRequest) {
   try {
     const apiUrl = getBrowserRuntimeEnv().apiUrl;
+    console.log('🔍 [HEALTH DEBUG] Frontend health endpoint called');
+    console.log('🔍 [HEALTH DEBUG] API URL from runtime env:', apiUrl);
     
     // Test backend connectivity
+    console.log('🔍 [HEALTH DEBUG] Attempting to fetch from:', `${apiUrl}/health`);
     const response = await fetch(`${apiUrl}/health`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
     });
+    console.log('🔍 [HEALTH DEBUG] Backend response status:', response.status);
     
     const backendHealth = await response.json();
     

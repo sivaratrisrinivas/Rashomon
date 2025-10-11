@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "start:prod": "NODE_ENV=production node .next/standalone/server.js",
+    "start:prod": "NODE_ENV=production node -e \"console.log('🚀 [STARTUP] Starting Next.js standalone server...'); console.log('🚀 [STARTUP] NODE_ENV:', process.env.NODE_ENV); console.log('🚀 [STARTUP] PORT:', process.env.PORT || 8080); console.log('🚀 [STARTUP] Available env vars:', Object.keys(process.env).filter(k => k.includes('API') || k.includes('SUPABASE')));\" && node .next/standalone/server.js",
     "lint": "eslint",
     "test": "jest",
     "test:unit": "jest",
