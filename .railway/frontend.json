@@ -5,8 +5,8 @@
     "builder": "nixpacks"
   },
   "deploy": {
-    "startCommand": "bun run start:prod",
-    "healthcheckPath": "/api/health",
+    "startCommand": "node .next/standalone/server.js",
+    "healthcheckPath": "/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "on_failure"
   }
