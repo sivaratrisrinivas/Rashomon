@@ -140,8 +140,17 @@ const app = new Elysia()
   })
   .get('/', () => ({ status: 'ok' }))
   .get('/health', async () => {
+    console.log('🔍 [BACKEND HEALTH] ===== BACKEND HEALTH ENDPOINT HIT =====');
+    console.log('🔍 [BACKEND HEALTH] Environment check:', {
+      NODE_ENV: process.env.NODE_ENV,
+      PORT: process.env.PORT,
+      hasSupabaseUrl: !!supabaseUrl,
+      hasSupabaseKey: !!supabaseKey
+    });
+    
     try {
       // Test database connectivity
+      console.log('🔍 [BACKEND HEALTH] Testing Supabase connection...');
       const supabase = createClient(supabaseUrl, supabaseKey);
       const { data, error } = await supabase.from('profiles').select('count').limit(1);
       

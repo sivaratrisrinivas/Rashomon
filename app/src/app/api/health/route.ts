@@ -5,6 +5,13 @@ export async function GET(_request: NextRequest) {
   try {
     console.log('🔍 [HEALTH DEBUG] ===== HEALTH ENDPOINT HIT =====');
     console.log('🔍 [HEALTH DEBUG] Request headers:', Object.fromEntries(_request.headers.entries()));
+    console.log('🔍 [HEALTH DEBUG] Request URL:', _request.url);
+    console.log('🔍 [HEALTH DEBUG] Request method:', _request.method);
+    
+    // Log all environment variables that might be relevant
+    console.log('🔍 [HEALTH DEBUG] All env vars with API/SUPABASE:', 
+      Object.keys(process.env).filter(k => k.includes('API') || k.includes('SUPABASE')));
+    
     const apiUrl = getServerRuntimeEnv().apiUrl;
     console.log('🔍 [HEALTH DEBUG] Frontend health endpoint called');
     console.log('🔍 [HEALTH DEBUG] API URL from runtime env:', apiUrl);
