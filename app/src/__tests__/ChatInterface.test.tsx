@@ -4,7 +4,7 @@ import ChatInterface from '@/components/ChatInterface';
 // Mock Supabase client
 jest.mock('@/lib/supabase', () => ({
     getSupabaseClient: jest.fn(() => ({
-        channel: jest.fn((roomName: string) => ({
+        channel: jest.fn((_roomName: string) => ({
             on: jest.fn().mockReturnThis(),
             subscribe: jest.fn().mockReturnThis(),
             unsubscribe: jest.fn(),

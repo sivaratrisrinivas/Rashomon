@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { createClient } from '@/lib/supabase/client';
-import { User } from '@supabase/supabase-js';
+import { User, RealtimeChannel } from '@supabase/supabase-js';
 
 const getApiUrl = () => getBrowserRuntimeEnv().apiUrl;
 
@@ -19,8 +19,8 @@ export default function ChatPage({ params }: ChatPageProps) {
     const router = useRouter();
 
     // Refs to hold the channel instances
-    const chatChannelRef = useRef<any>(null);
-    const presenceChannelRef = useRef<any>(null);
+    const chatChannelRef = useRef<RealtimeChannel | null>(null);
+    const presenceChannelRef = useRef<RealtimeChannel | null>(null);
 
     const [messages, setMessages] = useState<{ id: string; text: string; userId: string; timestamp: string }[]>([]);
     const [newMessage, setNewMessage] = useState('');
@@ -277,7 +277,7 @@ export default function ChatPage({ params }: ChatPageProps) {
                 presenceChannelRef.current = null;
             }
         };
-    }, [contentId]); // Removed 'router' from dependencies as it doesn't change
+    }, [contentId, router]); // Added router back to dependencies
 
     // Timer (no changes here)
     useEffect(() => {
@@ -311,7 +311,7 @@ export default function ChatPage({ params }: ChatPageProps) {
             });
         }, 1000);
         return () => clearInterval(interval);
-    }, [timeLeft, timerExpired, otherUserPresent]);
+    }, [timeLeft, timerExpired, otherUserPresent, contentId, router]);
 
     useEffect(() => {
         if (!messages.length) {

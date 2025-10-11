@@ -17,7 +17,7 @@ test('renders Sign In with Google button', () => {
 });
 
 test('calls signInWithOAuth when button is clicked', async () => {
-    const { createClient } = require('@/lib/supabase/client');
+    const { createClient } = jest.requireMock('@/lib/supabase/client');
     const mockSignInWithOAuth = jest.fn(() => Promise.resolve({ error: null }));
     createClient.mockReturnValue({
         auth: {

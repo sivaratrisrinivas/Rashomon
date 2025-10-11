@@ -11,7 +11,6 @@ import Link from 'next/link';
 import { PerspectiveReplay } from '@/components/PerspectiveReplay';
 
 import { createClient } from '@/lib/supabase/client';
-import { User } from '@supabase/supabase-js';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface Message {
@@ -426,7 +425,7 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
         };
         document.addEventListener('mouseup', handleMouseUp);
         return () => document.removeEventListener('mouseup', handleMouseUp);
-    }, [content.paragraphs, contentId, processedText, router, checkForExistingMatch]);
+    }, [content.paragraphs, contentId, processedText, router]);
 
     // Cleanup presence channel on unmount
     // TODO: Re-enable after auth
