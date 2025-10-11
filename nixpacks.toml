@@ -1,11 +1,11 @@
 [phases.setup]
-nixPkgs = ["bun"]
+nixPkgs = ["bun", "nodejs"]
 
 [phases.install]
-cmds = ["cd api && bun install"]
+cmds = ["cd app && bun install"]
 
 [phases.build]
-cmds = ["cd api && bun run build"]
+cmds = ["cd app && bun run build"]
 
 [start]
-cmd = "cd api && bun run start"
+cmd = "cd app && bun run start:prod"
