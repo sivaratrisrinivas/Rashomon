@@ -10,7 +10,7 @@ try {
   console.log('✅ @sinclair/typebox imported successfully');
   console.log('   Available exports:', Object.keys(typebox));
 } catch (error) {
-  console.error('❌ @sinclair/typebox import failed:', error.message);
+  console.error('❌ @sinclair/typebox import failed:', (error as Error).message);
 }
 
 // Test 2: Elysia import
@@ -19,7 +19,7 @@ try {
   const { Elysia } = await import('elysia');
   console.log('✅ Elysia imported successfully');
 } catch (error) {
-  console.error('❌ Elysia import failed:', error.message);
+  console.error('❌ Elysia import failed:', (error as Error).message);
 }
 
 // Test 3: Create Elysia instance
@@ -29,12 +29,11 @@ try {
   const app = new Elysia();
   console.log('✅ Elysia instance created successfully');
 } catch (error) {
-  console.error('❌ Elysia instance creation failed:', error.message);
+  console.error('❌ Elysia instance creation failed:', (error as Error).message);
 }
 
 // Test 4: Check environment
 console.log('4. Environment info:');
-console.log('   NODE_ENV:', process.env.NODE_ENV);
 console.log('   cwd:', process.cwd());
 console.log('   platform:', process.platform);
 
@@ -59,7 +58,7 @@ try {
     }
   }
 } catch (error) {
-  console.error('❌ node_modules check failed:', error.message);
+  console.error('❌ node_modules check failed:', (error as Error).message);
 }
 
 console.log('🧪 Module resolution test completed');

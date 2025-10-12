@@ -19,8 +19,6 @@ try {
 
 // Check if we're in a container environment
 console.log('🔍 [DIAGNOSTIC] Environment info:', {
-  NODE_ENV: process.env.NODE_ENV,
-  PWD: process.env.PWD,
   cwd: process.cwd(),
   platform: process.platform,
   arch: process.arch
@@ -142,8 +140,6 @@ const app = new Elysia()
   .get('/health', async () => {
     console.log('🔍 [BACKEND HEALTH] ===== BACKEND HEALTH ENDPOINT HIT =====');
     console.log('🔍 [BACKEND HEALTH] Environment check:', {
-      NODE_ENV: process.env.NODE_ENV,
-      PORT: process.env.PORT,
       hasSupabaseUrl: !!supabaseUrl,
       hasSupabaseKey: !!supabaseKey
     });
