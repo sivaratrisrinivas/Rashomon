@@ -1,6 +1,7 @@
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
@@ -57,6 +58,9 @@ export function PerspectiveReplay({
                     <DialogTitle className="text-[16px] font-light tracking-wide">
                         {selectedSession.participantCount} {selectedSession.participantCount === 1 ? 'reader' : 'readers'} discussed this {timeAgo}
                     </DialogTitle>
+                    <DialogDescription>
+                        View the discussion transcript and highlighted text from this reading session.
+                    </DialogDescription>
                 </DialogHeader>
 
                 {/* Session selector if multiple sessions */}
@@ -67,8 +71,8 @@ export function PerspectiveReplay({
                                 key={session.id}
                                 onClick={() => setSelectedSessionIndex(index)}
                                 className={`px-3 py-1 text-xs rounded-full transition-colors ${index === selectedSessionIndex
-                                        ? 'bg-orange-700/20 text-orange-700 border border-orange-700/30'
-                                        : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                                    ? 'bg-orange-700/20 text-orange-700 border border-orange-700/30'
+                                    : 'bg-muted/50 text-muted-foreground hover:bg-muted'
                                     }`}
                             >
                                 Discussion {index + 1}

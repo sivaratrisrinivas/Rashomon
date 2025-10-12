@@ -28,17 +28,17 @@ describe('PerspectiveReplay', () => {
         createdAt: '2025-10-05T10:00:00Z',
     };
 
-    test('renders nothing when session is null', () => {
+    test('renders nothing when sessions is empty', () => {
         const { container } = render(
             <PerspectiveReplay
                 open={true}
                 onOpenChange={jest.fn()}
-                session={null}
+                sessions={[]}
                 currentUserId="user-1"
             />
         );
 
-        // Dialog shouldn't render anything meaningful without a session
+        // Dialog shouldn't render anything meaningful without sessions
         expect(container.firstChild).toBeNull();
     });
 
@@ -47,7 +47,7 @@ describe('PerspectiveReplay', () => {
             <PerspectiveReplay
                 open={true}
                 onOpenChange={jest.fn()}
-                session={mockSession}
+                sessions={[mockSession]}
                 currentUserId="user-1"
             />
         );
@@ -62,7 +62,7 @@ describe('PerspectiveReplay', () => {
             <PerspectiveReplay
                 open={true}
                 onOpenChange={jest.fn()}
-                session={mockSession}
+                sessions={[mockSession]}
                 currentUserId="user-1"
             />
         );
@@ -75,7 +75,7 @@ describe('PerspectiveReplay', () => {
             <PerspectiveReplay
                 open={true}
                 onOpenChange={jest.fn()}
-                session={mockSession}
+                sessions={[mockSession]}
                 currentUserId="user-1"
             />
         );
@@ -89,7 +89,7 @@ describe('PerspectiveReplay', () => {
             <PerspectiveReplay
                 open={true}
                 onOpenChange={jest.fn()}
-                session={mockSession}
+                sessions={[mockSession]}
                 currentUserId="user-1"
             />
         );
@@ -103,7 +103,7 @@ describe('PerspectiveReplay', () => {
             <PerspectiveReplay
                 open={true}
                 onOpenChange={jest.fn()}
-                session={mockSession}
+                sessions={[mockSession]}
                 currentUserId="user-1"
             />
         );
@@ -122,7 +122,7 @@ describe('PerspectiveReplay', () => {
             <PerspectiveReplay
                 open={true}
                 onOpenChange={jest.fn()}
-                session={emptySession}
+                sessions={[emptySession]}
                 currentUserId="user-1"
             />
         );
@@ -140,7 +140,7 @@ describe('PerspectiveReplay', () => {
             <PerspectiveReplay
                 open={true}
                 onOpenChange={jest.fn()}
-                session={sessionWithoutHighlight}
+                sessions={[sessionWithoutHighlight]}
                 currentUserId="user-1"
             />
         );
@@ -161,7 +161,7 @@ describe('PerspectiveReplay', () => {
             <PerspectiveReplay
                 open={true}
                 onOpenChange={jest.fn()}
-                session={singleParticipantSession}
+                sessions={[singleParticipantSession]}
                 currentUserId="user-1"
             />
         );
