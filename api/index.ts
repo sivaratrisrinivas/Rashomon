@@ -475,66 +475,9 @@ const app = new Elysia()
         throw new Error('No text could be extracted from the image. The image may not contain readable text or the quality may be too low.');
       }
 
-      // Better structure the OCR content
-      const lines = processedText.split('\n').map(line => line.trim()).filter(line => line);
-      
-      // Extract title (first substantial line or first few lines combined)
-      let title = 'Uploaded Image';
-      if (lines.length > 0 && lines[0]) {
-        // If first line is short (< 50 chars), combine with next lines
-        if (lines[0].length < 50 && lines.length > 1) {
-          title = lines.slice(0, 2).filter(Boolean).join(' ');
-        } else {
-          title = lines[0];
-        }
-        // Limit title length
-        if (title.length > 100) {
-          title = title.substring(0, 97) + '...';
-        }
-      }
-      
-      // Group lines into paragraphs (merge short consecutive lines)
-      const paragraphs: string[] = [];
-      let currentParagraph = '';
-      
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (!line) continue;
-        
-        // Skip if this line is part of the title
-        if (i < 2 && title.includes(line)) continue;
-        
-        if (currentParagraph) {
-          // If current line is short and doesn't end with punctuation, merge with previous
-          if (line.length < 80 && !/[.!?]$/.test(currentParagraph)) {
-            currentParagraph += ' ' + line;
-          } else {
-            // Save current paragraph and start new one
-            paragraphs.push(currentParagraph);
-            currentParagraph = line;
-          }
-        } else {
-          currentParagraph = line;
-        }
-      }
-      
-      // Add last paragraph
-      if (currentParagraph) {
-        paragraphs.push(currentParagraph);
-      }
-      
-      // Estimate reading time
-      const wordCount = processedText.split(/\s+/).length;
-      const readingTime = Math.max(1, Math.ceil(wordCount / 200));
-
-      const structuredContent = {
-        metadata: {
-          title: title,
-          category: 'OCR',
-          readingTime: `${readingTime} min read`
-        },
-        paragraphs: paragraphs.length > 0 ? paragraphs : [processedText]
-      };
+      // For OCR content, store as plain text without structured formatting
+      // This preserves the original OCR output without headings/paragraphs
+      const plainTextContent = processedText;
 
       // Create a hash of the normalized text for deduplication
       const normalizedText = processedText.toLowerCase().replace(/\s+/g, ' ').trim();
@@ -569,7 +512,7 @@ const app = new Elysia()
         user_id: userId,
         source_type: 'upload',
         source_info: textHash, // Store hash instead of filePath for deduplication
-        processed_text: JSON.stringify(structuredContent)
+        processed_text: plainTextContent
       }).select();
 
       if (error) {

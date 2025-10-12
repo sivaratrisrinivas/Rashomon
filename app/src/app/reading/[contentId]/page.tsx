@@ -37,6 +37,7 @@ type ReadingPageProps = { params: Promise<{ contentId: string }> };
 export default function ReadingPage({ params }: ReadingPageProps) {
     const { contentId } = use(params);
     const [processedText, setProcessedText] = useState('');
+    const [sourceType, setSourceType] = useState('');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -58,6 +59,7 @@ export default function ReadingPage({ params }: ReadingPageProps) {
 
                 if (data.content) {
                     setProcessedText(data.content.processed_text);
+                    setSourceType(data.content.source_type);
                 } else {
                     console.error('Content not found:', data.error || 'Unknown error');
                 }
@@ -85,7 +87,7 @@ export default function ReadingPage({ params }: ReadingPageProps) {
         );
     }
 
-    return <ClientReadingView contentId={contentId} processedText={processedText} />;
+    return <ClientReadingView contentId={contentId} processedText={processedText} sourceType={sourceType} />;
 }
 
 // Helper function for fuzzy text matching
@@ -117,7 +119,7 @@ function findParagraphIndex(paragraphs: string[], selectedText: string): number 
     return -1;
 }
 
-function ClientReadingView({ contentId, processedText }: { contentId: string, processedText: string }) {
+function ClientReadingView({ contentId, processedText, sourceType }: { contentId: string, processedText: string, sourceType: string }) {
     const router = useRouter();
     const [selection, setSelection] = useState('');
     const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -207,82 +209,108 @@ function ClientReadingView({ contentId, processedText }: { contentId: string, pr
         fetchSessionsAndUser();
     }, [contentId]);
 
-    // Parse the structured content
+    // Parse content based on source type
     interface ContentStructure {
         metadata: { title: string; category?: string; readingTime?: string };
         paragraphs: string[];
     }
     let content: ContentStructure;
-    try {
-        console.log('🧪 [CONTENT] Raw processed_text length:', processedText.length);
-        content = JSON.parse(processedText) as ContentStructure;
-        console.log('📄 [CONTENT] Parsed JSON structure:', {
-            hasMetadata: !!content.metadata,
-            hasParagraphs: !!content.paragraphs,
-            paragraphCount: content.paragraphs?.length || 0,
-            title: content.metadata?.title || 'No title'
-        });
 
-        if (content.metadata) {
-            const metadataKeys = Object.keys(content.metadata);
-            const metadataLengths: Record<string, number | null> = {};
-            metadataKeys.forEach(key => {
-                const value = (content.metadata as Record<string, unknown>)[key];
-                metadataLengths[key] = typeof value === 'string' ? value.length : null;
+    // For OCR content (upload), display as plain text without structured formatting
+    if (sourceType === 'upload') {
+        console.log('📄 [CONTENT] OCR content detected, using plain text display');
+
+        // Check if OCR content is stored as JSON (old format) and extract plain text
+        let plainText = processedText;
+        try {
+            const parsed = JSON.parse(processedText);
+            if (parsed.paragraphs && Array.isArray(parsed.paragraphs)) {
+                // Old structured format - extract just the text
+                plainText = parsed.paragraphs.join('\n\n');
+                console.log('📄 [CONTENT] Extracted plain text from old structured format');
+            }
+        } catch (e) {
+            // Already plain text, use as is
+            console.log('📄 [CONTENT] Content is already in plain text format');
+        }
+
+        content = {
+            metadata: { title: 'Uploaded Image' },
+            paragraphs: [plainText]
+        };
+    } else {
+        // For web articles (URL), parse as structured JSON
+        try {
+            console.log('🧪 [CONTENT] Raw processed_text length:', processedText.length);
+            content = JSON.parse(processedText) as ContentStructure;
+            console.log('📄 [CONTENT] Parsed JSON structure:', {
+                hasMetadata: !!content.metadata,
+                hasParagraphs: !!content.paragraphs,
+                paragraphCount: content.paragraphs?.length || 0,
+                title: content.metadata?.title || 'No title'
             });
-            console.log('🧪 [CONTENT] Metadata keys:', metadataKeys);
-            console.log('🧪 [CONTENT] Metadata lengths:', metadataLengths);
-            if (typeof content.metadata.category === 'string') {
-                const categoryPreview = content.metadata.category.trim();
-                console.log('🧪 [CONTENT] Metadata.category preview:', categoryPreview.length > 120 ? `${categoryPreview.slice(0, 120)}…` : categoryPreview);
-            }
-        }
 
-        if (content.metadata?.title) {
-            const titleOccurrences = processedText.split(content.metadata.title).length - 1;
-            console.log('🧪 [CONTENT] Title occurrences in processed_text:', titleOccurrences);
-        }
-
-        if (Array.isArray(content.paragraphs)) {
-            console.log('🧪 [CONTENT] Paragraph count before dedupe:', content.paragraphs.length);
-            console.log('🧪 [CONTENT] Paragraph preview (first 3):', content.paragraphs.slice(0, 3).map((p: string) => {
-                const trimmed = p.trim();
-                return trimmed.length > 80 ? `${trimmed.slice(0, 80)}…` : trimmed;
-            }));
-        }
-
-        // Ensure we have the expected structure
-        if (!content.metadata) {
-            content.metadata = { title: 'Reading View' };
-        }
-        if (!content.paragraphs || !Array.isArray(content.paragraphs)) {
-            console.log('⚠️ [CONTENT] Invalid paragraphs structure, using fallback');
-            content.paragraphs = [processedText];
-        } else {
-            // Remove duplicate paragraphs if they exist
-            const originalCount = content.paragraphs.length;
-            content.paragraphs = [...new Set(content.paragraphs)];
-            if (originalCount !== content.paragraphs.length) {
-                console.log(`🧹 [CONTENT] Removed ${originalCount - content.paragraphs.length} duplicate paragraphs`);
+            if (content.metadata) {
+                const metadataKeys = Object.keys(content.metadata);
+                const metadataLengths: Record<string, number | null> = {};
+                metadataKeys.forEach(key => {
+                    const value = (content.metadata as Record<string, unknown>)[key];
+                    metadataLengths[key] = typeof value === 'string' ? value.length : null;
+                });
+                console.log('🧪 [CONTENT] Metadata keys:', metadataKeys);
+                console.log('🧪 [CONTENT] Metadata lengths:', metadataLengths);
+                if (typeof content.metadata.category === 'string') {
+                    const categoryPreview = content.metadata.category.trim();
+                    console.log('🧪 [CONTENT] Metadata.category preview:', categoryPreview.length > 120 ? `${categoryPreview.slice(0, 120)}…` : categoryPreview);
+                }
             }
-            if (content.paragraphs.length >= 2) {
-                const halfIndex = Math.floor(content.paragraphs.length / 2);
-                const firstHalf = content.paragraphs.slice(0, halfIndex).join('\n');
-                const secondHalf = content.paragraphs.slice(halfIndex).join('\n');
-                const halfSimilarity = calculateSimilarity(firstHalf, secondHalf);
-                console.log('🧪 [CONTENT] Similarity between halves:', halfSimilarity.toFixed(2));
-            }
+
             if (content.metadata?.title) {
-                const titleParagraphMatches = content.paragraphs.filter(
-                    (para: string) => para.trim().toLowerCase() === content.metadata.title.trim().toLowerCase()
-                ).length;
-                console.log('🧪 [CONTENT] Paragraphs matching title:', titleParagraphMatches);
+                const titleOccurrences = processedText.split(content.metadata.title).length - 1;
+                console.log('🧪 [CONTENT] Title occurrences in processed_text:', titleOccurrences);
             }
+
+            if (Array.isArray(content.paragraphs)) {
+                console.log('🧪 [CONTENT] Paragraph count before dedupe:', content.paragraphs.length);
+                console.log('🧪 [CONTENT] Paragraph preview (first 3):', content.paragraphs.slice(0, 3).map((p: string) => {
+                    const trimmed = p.trim();
+                    return trimmed.length > 80 ? `${trimmed.slice(0, 80)}…` : trimmed;
+                }));
+            }
+
+            // Ensure we have the expected structure
+            if (!content.metadata) {
+                content.metadata = { title: 'Reading View' };
+            }
+            if (!content.paragraphs || !Array.isArray(content.paragraphs)) {
+                console.log('⚠️ [CONTENT] Invalid paragraphs structure, using fallback');
+                content.paragraphs = [processedText];
+            } else {
+                // Remove duplicate paragraphs if they exist
+                const originalCount = content.paragraphs.length;
+                content.paragraphs = [...new Set(content.paragraphs)];
+                if (originalCount !== content.paragraphs.length) {
+                    console.log(`🧹 [CONTENT] Removed ${originalCount - content.paragraphs.length} duplicate paragraphs`);
+                }
+                if (content.paragraphs.length >= 2) {
+                    const halfIndex = Math.floor(content.paragraphs.length / 2);
+                    const firstHalf = content.paragraphs.slice(0, halfIndex).join('\n');
+                    const secondHalf = content.paragraphs.slice(halfIndex).join('\n');
+                    const halfSimilarity = calculateSimilarity(firstHalf, secondHalf);
+                    console.log('🧪 [CONTENT] Similarity between halves:', halfSimilarity.toFixed(2));
+                }
+                if (content.metadata?.title) {
+                    const titleParagraphMatches = content.paragraphs.filter(
+                        (para: string) => para.trim().toLowerCase() === content.metadata.title.trim().toLowerCase()
+                    ).length;
+                    console.log('🧪 [CONTENT] Paragraphs matching title:', titleParagraphMatches);
+                }
+            }
+        } catch (error) {
+            console.log('⚠️ [CONTENT] JSON parse failed, using fallback:', error);
+            // Fallback for old plain text content
+            content = { metadata: { title: 'Reading View' }, paragraphs: [processedText] };
         }
-    } catch (error) {
-        console.log('⚠️ [CONTENT] JSON parse failed, using fallback:', error);
-        // Fallback for old plain text content
-        content = { metadata: { title: 'Reading View' }, paragraphs: [processedText] };
     }
 
     // Check for existing matches when text is selected
