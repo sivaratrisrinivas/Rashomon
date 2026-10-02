@@ -1,420 +1,84 @@
 # Rashomon
 
-> A platform for meaningful discussions around shared reading experiences.
+Read the same article as someone else, highlight a passage, and talk about it in a live five-minute room. Afterwards the transcript stays attached to the passage, so the next reader can replay how other people read it.
 
----
+The name comes from Kurosawa's film: one event, several honest accounts.
 
-## What is Rashomon?
+## How it works
 
-Rashomon is a web application that brings readers together in real-time. Imagine reading an article or document online and being able to instantly discuss specific passages with other people reading the same content at that exact moment. It's like a book club, but spontaneous and digital.
+1. Sign in with Google and pick a few reading interests.
+2. Import a web article by URL, or upload an image or PDF (OCR via Google Cloud Vision).
+3. Read. Select a passage and choose "Discuss this".
+4. If another reader is on an overlapping passage, you are both dropped into a realtime chat (Supabase Realtime presence and broadcast). The room lasts five minutes.
+5. The transcript is saved against the passage and shows up as Perspective Replay for later readers.
 
-The name "Rashomon" comes from Akira Kurosawa's classic film about multiple perspectives on the same event – fitting for a platform where different readers can share their interpretations of the same text.
+## Getting a second reader into the room
 
----
+A realtime room is useless with one person in it, so the product work in this repo is about shrinking the time from "I found something" to "a friend is reading it with me":
 
-## Why Does This Exist?
+- **Invite a reader.** The reading view has a button that copies a link to that exact text. Signed-out friends go through Google sign-in (and onboarding if they are new) and land back on the same page, not the dashboard.
+- **Bookmarklet.** The import panel has a "Read on Rashomon" link you drag to the bookmarks bar. Clicking it on any article opens Rashomon and imports that page.
+- **Deep link.** `/dashboard?url=<article>` imports the article right away. The bookmarklet uses it, and it works from any share sheet or chat message. Only http and https URLs are accepted.
+- Two people importing the same URL reuse the same content row, so they can find each other.
 
-Reading online can feel isolating. You might stumble upon a fascinating article, encounter a thought-provoking paragraph, and wish you could discuss it with someone right then and there. Traditional commenting systems are asynchronous – you leave a comment and hope someone responds hours or days later.
+The redirect target after login is limited to same-site paths, so the `next` parameter can't be used as an open redirect.
 
-**Rashomon solves this by:**
-- **Matching you with other readers** who are reading the same content at the same time
-- **Letting you highlight specific text** to discuss, so conversations stay focused
-- **Creating ephemeral chat rooms** that last just long enough for a meaningful exchange
-- **Making serendipitous connections** between people who share reading interests
+## Security model
 
-It's designed for those "aha!" moments when you want to share a reaction immediately, not days later.
+- **The API trusts the Supabase access token, never the request body.** Every endpoint reads the user from `Authorization: Bearer <token>`. Older versions accepted a `userId` in the body, which let anyone write as anyone.
+- **CORS is an explicit allowlist** from `ALLOWED_ORIGINS`. There are no wildcard hosting domains.
+- **URL import is SSRF-hardened.** It resolves DNS and refuses private, loopback, link-local, CGNAT and metadata addresses (IPv4 and IPv6, including mapped forms). It follows redirects by hand and re-checks every hop, and it enforces a timeout, a 5 MB cap and an HTML or text content type. Residual risk: a DNS-rebinding race between the check and the connect.
+- **Uploads are scoped.** `/content/upload` only accepts storage paths inside the caller's own folder.
+- **Chat messages are appended atomically** through the `append_chat_message` database function, so concurrent senders don't overwrite each other.
+- **Rate limits** are applied per user and per client IP. Error responses are generic and the details go to the server logs.
+- **Row Level Security** policies for every table and the `uploads` bucket live in `supabase/migrations/`.
 
----
-
-## How Does It Work?
-
-### The User Journey
-
-1. **Sign In with Google**: Quick authentication, no passwords to remember.
-
-2. **Tell Us Your Interests**: When you first join, select your reading preferences (fiction, science, history, etc.) to help us understand what you enjoy.
-
-3. **Add Content**: You can bring content into Rashomon in two ways:
-   - **Paste a URL**: We'll extract the text from any web article
-   - **Upload a file**: We'll use OCR (optical character recognition) to pull text from images or documents
-
-4. **Read**: View your content in a clean, distraction-free reading interface.
-
-5. **Discuss**: Highlight any text passage to reveal the "Discuss this" button, which instantly connects you with other readers focused on the same section.
-
-6. **Connect**: Wrap up the 5-minute conversation and revisit the reading view later to replay past chats directly from highlighted passages.
-
----
-
-## What We've Built So Far
-
-Rashomon is being developed in phases. Here's what's complete:
-
-### ✅ Phase 1: Foundation (Complete)
-- Set up the basic project structure
-- Configured all necessary services (database, storage, APIs)
-- Created testing frameworks to ensure quality
-
-### ✅ Phase 2: Authentication & Onboarding (Complete)
-- Google sign-in integration
-- New user onboarding flow
-- Reading preferences collection
-- User profile management
-
-### ✅ Phase 3: Content Processing (Complete)
-- URL scraping: Extract text from any web page
-- File upload with OCR: Pull text from images and PDFs
-- Content storage and management
-- Reading interface for viewing processed content
-
-### ✅ Phase 4: Highlighting Interface (Complete)
-- Text selection and highlighting with precise position capture
-- Real-time matching with other readers
-- Intelligent paragraph-level matching
-
-### ✅ Phase 5: Real-Time Discussion (Complete)
-- Supabase Realtime presence tracking
-- Live chat with matched readers
-- 5-minute timed discussion sessions
-- Broadcast messaging system
-- Chat transcripts reused for Perspective Replay
-
-### ✅ Phase 6: Session Management (Complete)
-- Chat transcript recording
-- Session persistence in database powering Perspective Replay
-
-### 📋 Coming Next
-- **Phase 7**: Deployment and launch to production
-
----
-
-## The Technology
-
-We built Rashomon with modern, efficient tools. Here's what powers it (in plain English):
-
-### Frontend (What You See)
-- **Next.js**: A framework for building fast, modern websites
-- **React**: A library for building interactive user interfaces
-- **Tailwind CSS**: A styling system that makes the app look clean and professional
-- **shadcn/ui**: Pre-built components for buttons, forms, and dialogs
-
-### Backend (The Server)
-- **Bun**: A fast JavaScript runtime (like the engine that runs our server code)
-- **Elysia.js**: A lightweight framework for building APIs
-- **Supabase**: Handles our database, user authentication, and file storage
-- **Google Cloud Vision**: Performs OCR to extract text from images
-
-### How Data Flows
+## Layout
 
 ```
-User pastes URL
-    ↓
-Frontend sends URL to our server
-    ↓
-Server fetches the webpage
-    ↓
-Server extracts the text
-    ↓
-Server saves text to database
-    ↓
-User sees content in reading view
+api/   Bun + Elysia API
+  index.ts           wiring: env, Supabase client, Vision OCR, CORS, listen
+  src/app.ts         createApp(deps): routes, auth, validation, rate limits
+  src/ssrf.ts        public-URL checks and safe fetch
+  src/extract.ts     article text extraction
+  tests/             bun tests against an in-memory Supabase fake
+app/   Next.js 15 frontend
+  src/lib/api.ts     apiFetch: attaches the session token
+  src/lib/share.ts   invite links, bookmarklet, deep links, safe redirects
+supabase/migrations/ schema, indexes, RLS, storage policies, append function
 ```
 
-For file uploads, it's similar but includes an OCR step where Google's AI reads text from the image.
+## Running locally
 
----
+You need Bun 1.1 or newer, a Supabase project and, for OCR, a Google Cloud Vision API key.
 
-## Getting Started
-
-### Prerequisites
-
-You'll need these installed on your computer:
-- **Bun** (version 1.0+) - for running the backend
-- **Node.js** (version 20+) - for the frontend
-- A **Supabase account** - for database and authentication
-- A **Google Cloud account** - for OCR functionality
-
-### Environment Setup
-
-1. **Clone this repository**
-   ```bash
-   git clone https://github.com/sivaratrisrinivas/Rashomon.git
-   cd Rashomon
+1. Apply the schema: `supabase db push`, or paste `supabase/migrations/20261003000000_schema_rls.sql` into the SQL editor. It is idempotent. On an older project that already has duplicate chat sessions for the same passage, merge those first, because the unique indexes will refuse to build.
+2. API (`api/.env`):
    ```
-
-2. **Set up the frontend** (in the `app/` directory)
-   ```bash
-   cd app
-   bun install
+   SUPABASE_URL=...
+   SUPABASE_SERVICE_ROLE_KEY=...
+   GOOGLE_CLOUD_VISION_API_KEY=...        # optional; without it image uploads fail and URL import still works
+   ALLOWED_ORIGINS=http://localhost:3000
    ```
-   
-   Create a file called `.env.local` and add:
+   `cd api && bun install && bun run dev` starts it on port 3001.
+3. App (`app/.env.local`):
    ```
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   NEXT_PUBLIC_SUPABASE_URL=...
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+   NEXT_PUBLIC_API_URL=http://localhost:3001
+   SITE_URL=http://localhost:3000
    ```
+   `cd app && bun install && bun run dev` starts it on port 3000.
+4. In Supabase Auth, add `<site>/auth/callback` to the redirect URLs.
 
-3. **Set up the backend** (in the `api/` directory)
-   ```bash
-   cd ../api
-   bun install
-   ```
-   
-   Create a file called `.env` and add:
-   ```
-   SUPABASE_URL=your_supabase_project_url
-   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-   GOOGLE_CLOUD_VISION_API_KEY=your_google_vision_api_key
-   ```
+## Tests
 
-4. **Set up your database**
-   - Go to your Supabase dashboard
-   - Create these tables:
-     - `profiles` (for user preferences)
-     - `content` (for saved articles and documents)
-   - Create a storage bucket called `uploads`
-   - Enable Row Level Security policies
+- `cd api && bun test` runs 34 tests covering auth, ownership, validation, CORS, rate limits, the atomic message append, and SSRF (private ranges, IPv6, redirects to internal hosts, size and type limits). Line coverage is about 98%.
+- `cd app && npx jest` runs 28 tests, including the invite, bookmarklet, deep-link and safe-redirect helpers.
+- `cd app && bun run lint && bun run build`.
 
-### Running the App
-
-**Start the backend:**
-```bash
-cd api
-bun run dev
-```
-The API will run on `http://localhost:3001`
-
-**Start the frontend:**
-```bash
-cd app
-bun run dev
-```
-The website will open at `http://localhost:3000`
-
-### Running Tests
-
-**Backend tests:**
-```bash
-cd api
-bun test
-```
-
-**Frontend tests:**
-```bash
-cd app
-bun test                    # Unit tests
-bunx cypress open          # End-to-end tests
-```
-
----
-
-## Project Structure
-
-```
-Rashomon/
-├── app/                    # Frontend Next.js application
-│   ├── src/
-│   │   ├── app/           # Pages and routes
-│   │   ├── components/    # Reusable UI components
-│   │   └── lib/           # Helper functions and utilities
-│   ├── cypress/           # End-to-end tests
-│   └── package.json
-│
-├── api/                    # Backend Bun server
-│   ├── index.ts           # Main server file with all endpoints
-│   ├── tests/             # Backend unit tests
-│   └── package.json
-│
-├── tasklist.md            # Detailed development roadmap
-└── README.md              # You are here!
-```
-
----
-
-## Key Features Explained
-
-### URL Scraping
-When you paste a web address, we fetch that page's HTML, parse it, and extract just the text content. This gives you a clean reading experience without ads or distractions.
-
-### OCR (Optical Character Recognition)
-Upload a screenshot, photo of a page, or PDF, and Google's Vision API reads the text like a human would. It's surprisingly accurate, even with handwriting or unusual fonts.
-
-### Real-Time Matching
-Using Supabase's real-time features, we detect when multiple people are reading the same content simultaneously. When you highlight specific text, we capture the exact character range so you only connect with readers focused on overlapping passages. Sessions are later replayable from the reading view.
-
-### Ephemeral Chats
-Conversations last 5 minutes by default – long enough to exchange ideas but short enough to stay focused. This prevents endless threads and encourages meaningful, in-the-moment discussion. When the timer ends, the transcript is captured so future readers can replay the dialogue from the reading view.
-
----
-
-## Development Philosophy
-
-### Why These Technologies?
-
-- **Bun over Node.js**: It's faster and has a better developer experience
-- **Next.js**: Excellent for building both the UI and API routes in one framework
-- **Supabase**: Open-source, fast, and handles auth/database/storage in one service
-- **Server-side rendering**: Better performance and SEO
-
-### Testing Strategy
-
-We test at multiple levels:
-- **Unit tests**: Verify individual functions work correctly
-- **Integration tests**: Ensure backend endpoints handle requests properly
-- **End-to-end tests**: Simulate real user journeys through the app
-
-### Security Considerations
-
-- Row Level Security (RLS) ensures users can only access their own data
-- Authentication is handled by Supabase (industry-standard OAuth)
-- Server-side API key validation prevents unauthorized access
-- User content is never shared without explicit permission
-
----
+CI runs all of these on every push and pull request. The Cypress specs in `app/cypress` need a running app and a real Supabase project, so they are not part of CI.
 
 ## Deployment
 
-Ready to deploy Rashomon to production? Railway provides a unified platform for both frontend and backend with excellent developer experience.
-
-### Prerequisites
-
-- GitHub account (for CI/CD)
-- Railway account (sign up at [railway.app](https://railway.app) - **no credit card required**)
-- Supabase project (for database and auth)
-- Google Cloud account (for Vision API)
-
-### Quick Deploy to Railway
-
-1. **Push code to GitHub** (if not already)
-   ```bash
-   git add .
-   git commit -m "Configure Railway deployment"
-   git push origin main
-   ```
-
-2. **Deploy to Railway**
-   - Go to [railway.app](https://railway.app)
-   - Sign up/login with GitHub
-   - Click "New Project" → "Deploy from GitHub repo"
-   - Select your `Rashomon` repository
-   - Railway auto-detects both services from the monorepo
-
-3. **Configure Environment Variables**
-
-   **Backend Service:**
-   ```
-   SUPABASE_URL=your-supabase-project-url
-   SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
-   GOOGLE_CLOUD_VISION_API_KEY=your-google-cloud-vision-api-key
-   ```
-
-   **Frontend Service:**
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-   NEXT_PUBLIC_API_URL=https://your-backend-service.railway.app
-   ```
-
-4. **Deploy**
-   - Click "Deploy" for each service
-   - Wait for builds to complete (2-3 minutes each)
-
-5. **Update Supabase Auth**
-   - Go to Supabase Dashboard → Authentication → URL Configuration
-   - Add your Railway frontend URL to Redirect URLs
-
-### Railway Advantages
-
-- **Unified platform**: Both services in one dashboard
-- **Better free tier**: $5/month credit (vs Render's sleep after 15min)
-- **Auto-scaling**: Handles traffic spikes automatically
-- **Preview environments**: Auto-deploy PRs for testing
-- **Better DX**: Simpler config, faster deploys
-- **Built-in monitoring**: Metrics, logs, alerts included
-- **No cold starts**: Services stay warm on free tier
-
-### CI/CD Pipeline
-
-GitHub Actions automatically:
-- Runs tests on every push/PR
-- Deploys to staging on PRs
-- Deploys to production on merge to main
-- Performs health checks after deployment
-
-Add these secrets to your GitHub repository (Settings → Secrets):
-```
-RAILWAY_TOKEN=your-railway-auth-token
-RAILWAY_PROJECT_ID=your-railway-project-id
-SUPABASE_URL=your-supabase-project-url
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
-GOOGLE_CLOUD_VISION_API_KEY=your-google-cloud-vision-api-key
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-NEXT_PUBLIC_API_URL=https://your-backend-service.railway.app
-```
-
-### Health Checks
-
-- **Backend**: `https://your-backend.railway.app/health`
-- **Frontend**: `https://your-frontend.railway.app/api/health`
-
-### Troubleshooting
-
-**Backend won't start**
-- Check environment variables in Railway dashboard
-- Verify Supabase credentials
-- Check logs: `railway logs --service backend`
-
-**Frontend can't reach backend**
-- Verify `NEXT_PUBLIC_API_URL` is set correctly
-- Check CORS configuration
-- Ensure backend is running and healthy
-
-**Auth redirect fails**
-- Update Supabase redirect URLs with Railway domain
-- Check auth callback route exists
-
-For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md).
-
----
-
-## Contributing
-
-This is currently a learning project and personal experiment. If you're interested in contributing or have ideas, feel free to open an issue or reach out.
-
----
-
-## Roadmap
-
-**Immediate (This Week):**
-- [ ] Deploy backend to production hosting
-- [ ] Deploy frontend to Vercel
-- [ ] Set up CI/CD pipeline
-- [ ] Final production testing
-
-**Short-term (Next Month):**
-- [ ] Browser extension for one-click content addition
-- [ ] Enhanced text selection and annotation
-- [ ] User reading history and saved highlights
-
-**Long-term (Future):**
-- [ ] Mobile app version (iOS and Android)
-- [ ] Public content library with curated collections
-- [ ] Community moderation and reporting tools
-- [ ] Advanced matching algorithms based on reading patterns
-
----
-
-## License
-
-This project is currently private. License details will be added when the project is ready for public release.
-
----
-
-## Questions or Feedback?
-
-This README will evolve as the project grows. If anything is unclear or you have suggestions, please open an issue in the repository.
-
----
-
-**Built with curiosity and lots of coffee ☕**
+There is no live deployment right now. `railway.json` and `DEPLOYMENT.md` describe a two-service Railway setup. Deploying needs a Supabase project with the migration applied, a Railway project, and the environment variables above.

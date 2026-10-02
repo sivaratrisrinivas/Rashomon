@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Info } from 'lucide-react';
-import { getBrowserRuntimeEnv } from '@/lib/runtime-env';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
+import { apiFetch } from '@/lib/api';
+import { bookmarkletHref, parseDeepLinkUrl } from '@/lib/share';
 
 const DashboardPage = () => {
     const [url, setUrl] = useState('');
@@ -19,7 +20,10 @@ const DashboardPage = () => {
     const [importMode, setImportMode] = useState<'url' | 'file'>('url');
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [importError, setImportError] = useState<string | null>(null);
     const router = useRouter();
+    const bookmarkletRef = useRef<HTMLAnchorElement>(null);
+    const deepLinkHandled = useRef(false);
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -31,33 +35,50 @@ const DashboardPage = () => {
         fetchUser();
     }, []);
 
-    const handleUrlSubmit = async () => {
-        if (!url.trim() || !user) return;
+    const importUrl = useCallback(async (target: string) => {
+        if (!target.trim()) return;
 
         setIsUrlProcessing(true);
+        setImportError(null);
         try {
-            const response = await fetch(`${getBrowserRuntimeEnv().apiUrl}/content/url`, {
+            const response = await apiFetch('/content/url', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${(await createClient().auth.getSession()).data.session?.access_token}`
-                },
-                body: JSON.stringify({ url, userId: user.id }),
+                body: JSON.stringify({ url: target }),
             });
-
-            const { contentId, isExisting } = await response.json();
-            if (contentId) {
-                if (isExisting) {
-                    console.log('✅ Using existing content - perfect for matching with other readers!');
-                }
-                router.push(`/reading/${contentId}`);
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.contentId) {
+                setImportError(result.error || 'Could not import that page.');
+                return;
             }
-        } catch (error) {
-            console.error('Error processing URL:', error);
+            router.push(`/reading/${result.contentId}`);
+        } catch {
+            setImportError('Could not reach the server. Try again in a moment.');
         } finally {
             setIsUrlProcessing(false);
         }
+    }, [router]);
+
+    const handleUrlSubmit = () => {
+        if (!user) return;
+        void importUrl(url);
     };
+
+    // React refuses javascript: URLs in JSX, so the bookmarklet href is set directly.
+    useEffect(() => {
+        bookmarkletRef.current?.setAttribute('href', bookmarkletHref(window.location.origin));
+    }, [isImportExpanded, isLoading]);
+
+    // /dashboard?url=... comes from the bookmarklet or a shared link: import it right away.
+    useEffect(() => {
+        if (isLoading || !user || deepLinkHandled.current) return;
+        const target = parseDeepLinkUrl(window.location.search);
+        if (!target) return;
+        deepLinkHandled.current = true;
+        setUrl(target);
+        setIsImportExpanded(true);
+        setImportMode('url');
+        void importUrl(target);
+    }, [isLoading, user, importUrl]);
 
     const handleFileUpload = async () => {
         if (!file || !user) return;
@@ -79,13 +100,9 @@ const DashboardPage = () => {
             }
 
             console.log('File uploaded, processing OCR...');
-            const response = await fetch(`${getBrowserRuntimeEnv().apiUrl}/content/upload`, {
+            const response = await apiFetch('/content/upload', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${(await createClient().auth.getSession()).data.session?.access_token}`
-                },
-                body: JSON.stringify({ filePath, userId: user.id }),
+                body: JSON.stringify({ filePath }),
             });
 
             const result = await response.json();
@@ -191,6 +208,24 @@ const DashboardPage = () => {
                                     </div>
                                     <p className="text-[11px] text-muted-foreground pl-1 font-light">
                                         Extract text from any web article
+                                    </p>
+                                    {importError && (
+                                        <p role="alert" className="text-[12px] text-red-700 pl-1 font-light">
+                                            {importError}
+                                        </p>
+                                    )}
+                                    <p className="text-[11px] text-muted-foreground pl-1 font-light">
+                                        Faster: drag{' '}
+                                        <a
+                                            ref={bookmarkletRef}
+                                            href="#"
+                                            onClick={(e) => e.preventDefault()}
+                                            className="underline decoration-dotted text-foreground/80"
+                                            title="Drag this to your bookmarks bar"
+                                        >
+                                            Read on Rashomon
+                                        </a>{' '}
+                                        to your bookmarks bar, then click it on any article.
                                     </p>
                                 </div>
                             ) : (

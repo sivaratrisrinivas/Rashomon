@@ -2,14 +2,16 @@
 
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
+import { safeNextPath } from '@/lib/share'
 
 export default function LoginPage() {
     const handleGoogleSignIn = async () => {
         const supabase = createClient()
+        const next = safeNextPath(new URLSearchParams(window.location.search).get('next'))
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
+                redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
             },
         })
         if (error) console.error('Login error:', error)
