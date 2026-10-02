@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  // Strip the chatty debug logs from production bundles; keep warnings and errors.
+  compiler: { removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false },
   serverExternalPackages: ['@supabase/supabase-js'],
   async headers() {
     return [

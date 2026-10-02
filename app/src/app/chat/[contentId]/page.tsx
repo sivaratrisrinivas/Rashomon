@@ -3,14 +3,13 @@
 import { use, useEffect, useState, useRef } from 'react'; // Import useRef
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { getBrowserRuntimeEnv } from '@/lib/runtime-env';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { createClient } from '@/lib/supabase/client';
-import { User, RealtimeChannel } from '@supabase/supabase-js';
+import { RealtimeChannel } from '@supabase/supabase-js';
+import { apiFetch } from '@/lib/api';
 
-const getApiUrl = () => getBrowserRuntimeEnv().apiUrl;
 
 type ChatPageProps = { params: Promise<{ contentId: string }> };
 
@@ -370,7 +369,6 @@ export default function ChatPage({ params }: ChatPageProps) {
         try {
             console.log('📤 [SEND] Persisting to backend...');
             const messagePayload: Record<string, unknown> = {
-                userId: currentUserId,
                 message: newMessage,
                 timestamp: message.timestamp,
             };
@@ -388,9 +386,8 @@ export default function ChatPage({ params }: ChatPageProps) {
 
             console.log('🔍 [SEND DEBUG] Full message payload:', messagePayload);
 
-            const response = await fetch(`${getApiUrl()}/messages`, {
+            const response = await apiFetch('/messages', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(messagePayload),
             });
             console.log('📤 [SEND] Backend response status:', response.status);
