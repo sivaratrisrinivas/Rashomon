@@ -5,13 +5,14 @@
 import { use, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { getBrowserRuntimeEnv } from '@/lib/runtime-env';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PerspectiveReplay } from '@/components/PerspectiveReplay';
 
 import { createClient } from '@/lib/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { apiFetch } from '@/lib/api';
+import { inviteUrl } from '@/lib/share';
 
 interface Message {
     userId: string;
@@ -30,7 +31,6 @@ interface ChatSession {
 }
 
 
-const getApiUrl = () => getBrowserRuntimeEnv().apiUrl;
 
 type ReadingPageProps = { params: Promise<{ contentId: string }> };
 
@@ -44,7 +44,7 @@ export default function ReadingPage({ params }: ReadingPageProps) {
         const fetchContent = async () => {
             // TODO: Re-implement with new auth
             try {
-                const response = await fetch(`${getBrowserRuntimeEnv().apiUrl}/content/${contentId}`);
+                const response = await apiFetch(`/content/${contentId}`);
 
                 if (!response.ok) {
                     if (response.status === 404) {
@@ -120,6 +120,19 @@ function findParagraphIndex(paragraphs: string[], selectedText: string): number 
 }
 
 function ClientReadingView({ contentId, processedText, sourceType }: { contentId: string, processedText: string, sourceType: string }) {
+    const [inviteCopied, setInviteCopied] = useState(false);
+
+    // A room needs two readers. Copy a link that drops a friend into this exact text.
+    const copyInvite = async () => {
+        const link = inviteUrl(window.location.origin, contentId);
+        try {
+            await navigator.clipboard.writeText(link);
+        } catch {
+            window.prompt('Copy this invite link', link);
+        }
+        setInviteCopied(true);
+        setTimeout(() => setInviteCopied(false), 2000);
+    };
     const router = useRouter();
     const [selection, setSelection] = useState('');
     const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -194,7 +207,7 @@ function ClientReadingView({ contentId, processedText, sourceType }: { contentId
 
             // Fetch past sessions
             try {
-                const response = await fetch(`${getApiUrl()}/content/${contentId}/sessions`);
+                const response = await apiFetch(`/content/${contentId}/sessions`);
                 if (response.ok) {
                     const data = await response.json();
                     setPastSessions(data.sessions || []);
@@ -515,15 +528,13 @@ function ClientReadingView({ contentId, processedText, sourceType }: { contentId
             contentId,
             text: selection,
             context: processedText.substring(0, 100),
-            userId,
             startIndex: selectionStartIndex >= 0 ? selectionStartIndex : undefined,
             endIndex: selectionEndIndex >= 0 ? selectionEndIndex : undefined
         };
         console.log('🔍 [DISCUSS DEBUG] Highlight request body:', JSON.stringify(highlightPayload, null, 2));
 
-        const response = await fetch(`${getApiUrl()}/highlights`, {
+        const response = await apiFetch('/highlights', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(highlightPayload),
         });
 
@@ -597,6 +608,14 @@ function ClientReadingView({ contentId, processedText, sourceType }: { contentId
                     >
                         ← Library
                     </Link>
+
+                    <button
+                        type="button"
+                        onClick={copyInvite}
+                        className="ml-auto mr-6 text-[11px] text-muted-foreground hover:text-foreground transition-all duration-300 font-light tracking-wide"
+                    >
+                        {inviteCopied ? 'Link copied' : 'Invite a reader'}
+                    </button>
 
                     {/* Perspective Replay Toggle */}
                     {pastSessions.length > 0 && (

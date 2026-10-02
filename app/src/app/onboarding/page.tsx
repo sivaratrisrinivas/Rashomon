@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
-import { getBrowserRuntimeEnv } from '@/lib/runtime-env';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
+import { apiFetch } from '@/lib/api';
+import { safeNextPath } from '@/lib/share';
 
 const preferencesOptions = ['fiction', 'non-fiction', 'mystery', 'science', 'history']; // Example options
 
@@ -34,19 +35,15 @@ const OnboardingPage = () => {
 
         setIsSubmitting(true);
         try {
-            const response = await fetch(`${getBrowserRuntimeEnv().apiUrl}/profile`, {
+            const response = await apiFetch('/profile', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${(await createClient().auth.getSession()).data.session?.access_token}`
-                },
                 body: JSON.stringify({
                     reading_preferences: selectedPreferences
                 }),
             });
 
             if (response.ok) {
-                router.push('/dashboard');
+                router.push(safeNextPath(new URLSearchParams(window.location.search).get('next')));
             } else {
                 console.error('Failed to save preferences');
             }
