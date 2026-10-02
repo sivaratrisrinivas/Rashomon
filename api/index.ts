@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
-import { ImageAnnotatorClient } from '@google-cloud/vision';
 import { createApp } from './src/app';
 import { safeFetchText } from './src/ssrf';
+import { createGeminiOcr } from './src/ocr';
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -14,10 +14,10 @@ const required = (name: string) => {
 
 const supabaseUrl = required('SUPABASE_URL');
 const serviceKey = required('SUPABASE_SERVICE_ROLE_KEY');
-const visionKey = process.env.GOOGLE_CLOUD_VISION_API_KEY;
+const geminiKey = process.env.GEMINI_API_KEY;
 
 const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
-const vision = visionKey ? new ImageAnnotatorClient({ apiKey: visionKey }) : null;
+const geminiOcr = geminiKey ? createGeminiOcr({ apiKey: geminiKey, model: process.env.GEMINI_OCR_MODEL }) : null;
 
 const allowedOrigins: (string | RegExp)[] = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000')
   .split(',')
@@ -33,18 +33,8 @@ const app = createApp({
   },
   fetchPage: (url) => safeFetchText(url),
   ocr: async (image) => {
-    if (!vision) throw new Error('OCR is not configured (GOOGLE_CLOUD_VISION_API_KEY missing)');
-    let lastError: unknown;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        const [result] = await vision.documentTextDetection({ image: { content: image }, imageContext: { languageHints: ['en'] } });
-        return result.fullTextAnnotation?.text || result.textAnnotations?.[0]?.description || '';
-      } catch (err) {
-        lastError = err;
-        await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
-      }
-    }
-    throw lastError;
+    if (!geminiOcr) throw new Error('OCR is not configured (GEMINI_API_KEY missing)');
+    return geminiOcr(image);
   },
 });
 

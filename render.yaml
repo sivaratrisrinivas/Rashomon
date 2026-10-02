@@ -1,0 +1,19 @@
+# Render Blueprint for the API (free instance). The frontend runs on Vercel (root directory: app).
+services:
+  - type: web
+    name: rashomon-api
+    runtime: docker
+    plan: free
+    region: singapore
+    rootDir: api
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
