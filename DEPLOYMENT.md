@@ -1,318 +1,37 @@
-# Railway Production Deployment Guide
+# Deploying Rashomon on free tiers
 
-This guide covers deploying Rashomon to Railway with production-ready configuration, monitoring, and CI/CD.
+Everything here runs on free plans: Supabase (database, auth, realtime, storage), Render (API and app) and the Gemini API free tier (OCR). No billing account is needed anywhere.
 
-## Prerequisites
+## 1. Supabase
 
-- GitHub account (for CI/CD)
-- Railway account (sign up at [railway.app](https://railway.app))
-- Supabase project (for database and auth)
-- Google Cloud account (for Vision API)
+1. Create a project on the free plan.
+2. Apply `supabase/migrations/20261003000000_schema_rls.sql` (`supabase db push`, or paste it into the SQL editor). It creates the tables, RLS policies, the `uploads` bucket and the `append_chat_message` function.
+3. Auth settings:
+   - Enable the email provider and set a minimum password length of 8.
+   - The built-in mailer only delivers to members of your Supabase team, so either turn on auto-confirm or connect your own SMTP.
+   - Set Site URL to the app URL and add `<app>/**` to the redirect allow list.
+   - Google sign-in is optional. It needs a Google Cloud OAuth client, the Google provider enabled in Supabase, and the app built with `NEXT_PUBLIC_GOOGLE_AUTH=true`.
 
-## Quick Start
+## 2. Gemini key (OCR)
 
-### 1. Prepare Your Repository
+Create a key at https://aistudio.google.com/apikey. The free tier is enough for image and PDF uploads. Without a key, URL import still works and uploads return an error.
 
-```bash
-# Ensure all changes are committed
-git add .
-git commit -m "Configure Railway deployment"
-git push origin main
-```
+## 3. Render
 
-### 2. Deploy to Railway
+`render.yaml` is a Blueprint for both services (free instances, Singapore region):
 
-#### Option A: Railway Dashboard (Recommended)
+| Service | Root | Runtime | Env |
+|---|---|---|---|
+| `rashomon-api` | `api` | Docker (`api/Dockerfile`) | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `ALLOWED_ORIGINS` |
+| `rashomon` | `app` | Node (Next.js standalone) | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_API_URL`, `SITE_URL`, `HOSTNAME=0.0.0.0` |
 
-1. **Go to Railway Dashboard**
-   - Visit [railway.app](https://railway.app)
-   - Sign up/login with GitHub
+`ALLOWED_ORIGINS` is an exact, comma-separated list of app origins. Wildcards are not supported on purpose.
 
-2. **Create New Project**
-   - Click "New Project"
-   - Select "Deploy from GitHub repo"
-   - Choose your `Rashomon` repository
+The app also builds on Vercel (root directory `app`, framework Next.js) with the same `NEXT_PUBLIC_*` variables. If you add a Vercel URL, add it to `ALLOWED_ORIGINS` and to the Supabase redirect allow list.
 
-3. **Configure Services**
-   Railway will auto-detect both services from the monorepo:
-   - **Backend Service** (from `api/` directory)
-   - **Frontend Service** (from `app/` directory)
+## 4. Check it
 
-4. **Set Environment Variables**
+- `GET <api>/health` returns `{"status":"healthy","database":"connected"}`.
+- Create an account on `<app>/login`, pick interests, import an article by URL, highlight a passage and open the discussion.
 
-   **Backend Service:**
-   ```
-   SUPABASE_URL=your-supabase-project-url
-   SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
-   GOOGLE_CLOUD_VISION_API_KEY=your-google-cloud-vision-api-key
-   PORT=3001
-   NODE_ENV=production
-   ```
-
-   **Frontend Service:**
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-   NEXT_PUBLIC_API_URL=https://your-backend-service.railway.app
-   PORT=3000
-   NODE_ENV=production
-   ```
-
-5. **Deploy**
-   - Click "Deploy" for each service
-   - Wait for builds to complete (2-3 minutes each)
-
-#### Option B: Railway CLI
-
-```bash
-# Install Railway CLI
-curl -fsSL https://railway.app/install.sh | sh
-
-# Login to Railway
-railway login
-
-# Deploy backend
-cd api
-railway up
-
-# Deploy frontend
-cd ../app
-railway up
-```
-
-### 3. Configure GitHub Secrets
-
-Add these to your GitHub repository (Settings → Secrets and variables → Actions):
-
-```
-RAILWAY_TOKEN=your-railway-auth-token
-RAILWAY_PROJECT_ID=your-railway-project-id
-RAILWAY_BACKEND_URL=https://your-backend-service.railway.app
-RAILWAY_FRONTEND_URL=https://your-frontend-service.railway.app
-SUPABASE_URL=your-supabase-project-url
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
-GOOGLE_CLOUD_VISION_API_KEY=your-google-cloud-vision-api-key
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-NEXT_PUBLIC_API_URL=https://your-backend-service.railway.app
-```
-
-### 4. Update Supabase Auth Settings
-
-1. Go to Supabase Dashboard → Authentication → URL Configuration
-2. Add your Railway frontend URL to "Site URL" and "Redirect URLs"
-3. Save changes
-
-## Environment Variables Reference
-
-### Backend Service
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `SUPABASE_URL` | Your Supabase project URL | `https://abc123.supabase.co` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` |
-| `GOOGLE_CLOUD_VISION_API_KEY` | Google Vision API key | `AIzaSyB...` |
-| `PORT` | Server port | `3001` |
-| `NODE_ENV` | Environment | `production` |
-
-### Frontend Service
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL (public) | `https://abc123.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (public) | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` |
-| `NEXT_PUBLIC_API_URL` | Backend service URL | `https://rashomon-api.railway.app` |
-| `PORT` | Server port | `3000` |
-| `NODE_ENV` | Environment | `production` |
-
-## Getting Required Values
-
-### Supabase Configuration
-
-1. Go to [supabase.com](https://supabase.com) → Your Project
-2. Settings → API
-3. Copy:
-   - **Project URL** → `SUPABASE_URL` & `NEXT_PUBLIC_SUPABASE_URL`
-   - **anon public** key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - **service_role** key → `SUPABASE_SERVICE_ROLE_KEY`
-
-### Google Cloud Vision API
-
-1. Go to [console.cloud.google.com](https://console.cloud.google.com)
-2. APIs & Services → Credentials
-3. Create Credentials → API Key
-4. Copy key → `GOOGLE_CLOUD_VISION_API_KEY`
-
-### Railway Values
-
-1. **Project ID**: Railway Dashboard → Project Settings → General
-2. **Auth Token**: Railway CLI → `railway auth login` or Dashboard → Account Settings
-3. **Service URLs**: Railway Dashboard → Services → Copy URLs
-
-## CI/CD Pipeline
-
-The GitHub Actions workflow automatically:
-
-- Runs tests on every push/PR
-- Deploys to staging on PRs
-- Deploys to production on merge to main
-- Performs health checks after deployment
-
-### Manual Deployment
-
-```bash
-# Deploy specific service
-railway up --service backend
-railway up --service frontend
-
-# Deploy all services
-railway up
-```
-
-## Monitoring & Health Checks
-
-### Health Endpoints
-
-- **Backend**: `https://your-backend.railway.app/health`
-- **Frontend**: `https://your-frontend.railway.app/api/health`
-
-### Railway Dashboard
-
-- **Metrics**: CPU, Memory, Network usage
-- **Logs**: Real-time application logs
-- **Deployments**: Deployment history and status
-
-### Logs
-
-```bash
-# View logs via CLI
-railway logs --service backend
-railway logs --service frontend
-
-# Follow logs in real-time
-railway logs --service backend --follow
-```
-
-## Troubleshooting
-
-### Common Issues
-
-**Backend won't start:**
-- Check environment variables in Railway dashboard
-- Verify Supabase credentials
-- Check logs: `railway logs --service backend`
-
-**Frontend can't reach backend:**
-- Verify `NEXT_PUBLIC_API_URL` is set correctly
-- Check CORS configuration
-- Ensure backend is running and healthy
-
-**Auth redirect fails:**
-- Update Supabase redirect URLs with Railway domain
-- Check auth callback route exists
-
-**Build failures:**
-- Check Railway build logs
-- Verify all dependencies are in package.json
-- Ensure Bun version compatibility
-
-### Debug Commands
-
-```bash
-# Check service status
-railway status
-
-# View environment variables
-railway variables
-
-# Connect to service shell
-railway connect
-
-# View service metrics
-railway metrics
-```
-
-## Security Considerations
-
-### Railway Secrets
-
-- Use Railway secrets (not environment variables) for sensitive data
-- Rotate API keys regularly
-- Monitor usage in service dashboards
-
-### CORS Configuration
-
-The backend is configured to accept requests from:
-- `localhost:3000` (development)
-- `*.railway.app` (Railway domains)
-- `*.vercel.app` (Vercel domains)
-- `*.onrender.com` (Render domains)
-
-### Rate Limiting
-
-- 100 requests per 15 minutes per IP
-- Headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`
-- 429 status code when exceeded
-
-## Scaling
-
-### Railway Auto-scaling
-
-- Services automatically scale based on traffic
-- No configuration needed for basic scaling
-- Monitor usage in Railway dashboard
-
-### Performance Optimization
-
-- Backend uses connection pooling for Supabase
-- Frontend uses Next.js standalone output
-- Static assets served via Railway CDN
-
-## Rollback Procedures
-
-### Automatic Rollback
-
-Railway automatically rolls back on deployment failures.
-
-### Manual Rollback
-
-```bash
-# Rollback to previous deployment
-railway rollback --service backend
-railway rollback --service frontend
-
-# Rollback to specific deployment
-railway rollback --service backend --deployment <deployment-id>
-```
-
-## Cost Management
-
-### Railway Pricing
-
-- **Free Tier**: $5/month credit
-- **Pro Plan**: $20/month per service
-- **Enterprise**: Custom pricing
-
-### Cost Optimization
-
-- Use Railway's built-in monitoring to track usage
-- Set up alerts for unusual usage patterns
-- Consider upgrading to Pro for production workloads
-
-## Support
-
-### Railway Support
-
-- Documentation: [docs.railway.app](https://docs.railway.app)
-- Community: [Railway Discord](https://discord.gg/railway)
-- Status: [status.railway.app](https://status.railway.app)
-
-### Project Support
-
-- GitHub Issues: Report bugs and feature requests
-- Documentation: Check README.md for setup instructions
-- Community: Join discussions in repository
-
----
-
-**Ready to deploy?** Follow the Quick Start guide above, and your Rashomon application will be live on Railway in minutes!
+Free Render instances sleep after 15 minutes idle; the first request afterwards takes up to a minute.
