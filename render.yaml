@@ -1,0 +1,41 @@
+# Render Blueprint: API and app, both on free instances.
+services:
+  - type: web
+    name: rashomon-api
+    runtime: docker
+    plan: free
+    region: singapore
+    rootDir: api
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+  - type: web
+    name: rashomon
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: app
+    buildCommand: npm install -g bun && bun install --frozen-lockfile && bun run build && cp -r .next/static .next/standalone/.next/static && cp -r public .next/standalone/public
+    startCommand: node .next/standalone/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: SITE_URL
+        sync: false
+      - key: HOSTNAME
+        value: 0.0.0.0
+      - key: CYPRESS_INSTALL_BINARY
+        value: "0"
